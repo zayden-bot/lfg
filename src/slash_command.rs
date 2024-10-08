@@ -80,8 +80,6 @@ impl LfgCommand {
         };
 
         if let Some(sub_activity) = ACTIVITY_MAP.get(activity.split_whitespace().next().unwrap()) {
-            interaction.defer_ephemeral(ctx).await?;
-
             let menu = CreateSelectMenu::new(
                 "lfg_activity",
                 CreateSelectMenuKind::String {
@@ -101,6 +99,8 @@ impl LfgCommand {
                 )
                 .await?;
         } else {
+            interaction.delete_response(ctx).await?;
+
             let modal = create_modal(activity);
 
             interaction
