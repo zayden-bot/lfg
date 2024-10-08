@@ -1,14 +1,10 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+mod components;
+mod error;
+mod modal;
+mod slash_command;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use components::ActivityComponent;
+pub use error::Error;
+use error::Result;
+pub use modal::LfgCreateModal;
+pub use slash_command::LfgCommand;

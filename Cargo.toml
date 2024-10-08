@@ -4,3 +4,21 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+chrono = { version = "*", default-features = false, features = ["alloc"] }
+lazy_static = { version = "*", default-features = false }
+zayden-core = { git = "https://github.com/zayden-bot/slash-command-core.git", branch = "master" }
+
+[dependencies.serenity]
+git = "https://github.com/serenity-rs/serenity"
+branch = "current"
+# version = "*"
+default-features = false
+features = [
+    # "builder",
+    # "client",
+    # "collector",
+    # "gateway",
+    "model",
+    # "utils",
+    "rustls_backend",
+]
