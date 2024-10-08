@@ -3,8 +3,9 @@ use std::collections::HashMap;
 use chrono::NaiveDateTime;
 use lazy_static::lazy_static;
 use serenity::all::{
-    ChannelId, Context, CreateActionRow, CreateEmbed, CreateEmbedFooter, CreateForumPost,
-    CreateInputText, CreateMessage, CreateModal, InputTextStyle, Mentionable, ModalInteraction,
+    ButtonStyle, ChannelId, Context, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter,
+    CreateForumPost, CreateInputText, CreateMessage, CreateModal, InputTextStyle, Mentionable,
+    ModalInteraction,
 };
 use zayden_core::parse_modal_data;
 
@@ -83,6 +84,23 @@ impl LfgCreateModal {
                 interaction.user.name
             )));
 
+        let buttons = vec![
+            CreateButton::new("lfg_join")
+                .emoji('➕')
+                .style(ButtonStyle::Success),
+            CreateButton::new("lfg_leave")
+                .emoji('➖')
+                .style(ButtonStyle::Danger),
+            CreateButton::new("lfg_alternative")
+                .emoji('🔄')
+                .style(ButtonStyle::Secondary),
+            CreateButton::new("lfg_settings")
+                .emoji('⚙')
+                .style(ButtonStyle::Primary),
+        ];
+
+        let row = vec![CreateActionRow::Buttons(buttons)];
+
         LFG_CHANNEL
             .create_forum_post(
                 ctx,
@@ -92,7 +110,7 @@ impl LfgCreateModal {
                         activity,
                         naive_dt.and_utc().format("%d %b %H:%M")
                     ),
-                    CreateMessage::new().embed(embed),
+                    CreateMessage::new().embed(embed).components(row),
                 ),
             )
             .await?;
