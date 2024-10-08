@@ -65,7 +65,7 @@ lazy_static! {
 pub struct LfgCommand;
 
 impl LfgCommand {
-    async fn run(ctx: &Context, interaction: &CommandInteraction) -> Result<()> {
+    pub async fn run(ctx: &Context, interaction: &CommandInteraction) -> Result<()> {
         let command = &interaction.data.options()[0];
 
         let options = match &command.value {
@@ -110,7 +110,7 @@ impl LfgCommand {
         Ok(())
     }
 
-    fn register() -> CreateCommand {
+    pub fn register() -> CreateCommand {
         CreateCommand::new("lfg")
             .description("Create a looking for group post")
             .add_option(
