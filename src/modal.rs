@@ -4,8 +4,7 @@ use chrono::NaiveDateTime;
 use lazy_static::lazy_static;
 use serenity::all::{
     ChannelId, Context, CreateActionRow, CreateEmbed, CreateEmbedFooter, CreateForumPost,
-    CreateInputText, CreateMessage, CreateModal, EditInteractionResponse, InputTextStyle,
-    Mentionable, ModalInteraction,
+    CreateInputText, CreateMessage, CreateModal, InputTextStyle, Mentionable, ModalInteraction,
 };
 use zayden_core::parse_modal_data;
 
@@ -58,8 +57,6 @@ pub struct LfgCreateModal;
 
 impl LfgCreateModal {
     pub async fn run(ctx: &Context, interaction: &ModalInteraction) -> Result<()> {
-        interaction.defer_ephemeral(ctx).await?;
-
         let values = parse_modal_data(&interaction.data.components);
 
         let activity = values[0];
@@ -97,13 +94,6 @@ impl LfgCreateModal {
                     ),
                     CreateMessage::new().embed(embed),
                 ),
-            )
-            .await?;
-
-        interaction
-            .edit_response(
-                ctx,
-                EditInteractionResponse::new().content("Created LFG post"),
             )
             .await?;
 
