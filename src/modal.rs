@@ -77,7 +77,7 @@ impl LfgCreateModal {
             description,
             &[interaction.user.id].into_iter().collect(),
             fireteam_size,
-            interaction.user.id,
+            &interaction.user.name,
         );
 
         let buttons = vec![
@@ -89,10 +89,12 @@ impl LfgCreateModal {
                 .style(ButtonStyle::Danger),
             CreateButton::new("lfg_alternative")
                 .emoji('❔')
-                .style(ButtonStyle::Secondary),
+                .style(ButtonStyle::Secondary)
+                .disabled(true),
             CreateButton::new("lfg_settings")
                 .emoji('⚙')
-                .style(ButtonStyle::Secondary),
+                .style(ButtonStyle::Secondary)
+                .disabled(true),
         ];
 
         let row = vec![CreateActionRow::Buttons(buttons)];

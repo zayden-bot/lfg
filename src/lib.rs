@@ -20,7 +20,7 @@ fn create_lfg_embed(
     description: &str,
     fireteam: &HashSet<UserId>,
     fireteam_size: u8,
-    owner: UserId,
+    owner_name: &str,
 ) -> CreateEmbed {
     let fireteam_str = fireteam
         .iter()
@@ -38,8 +38,5 @@ fn create_lfg_embed(
             fireteam_str,
             false,
         )
-        .footer(CreateEmbedFooter::new(format!(
-            "Posted by {}",
-            owner.mention()
-        )))
+        .footer(CreateEmbedFooter::new(format!("Posted by {}", owner_name)))
 }

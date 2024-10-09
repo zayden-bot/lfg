@@ -27,7 +27,7 @@ impl PostComponents {
             &post.description,
             &post.fireteam,
             post.fireteam_size,
-            post.owner,
+            &post.owner.to_user(ctx).await?.name,
         );
 
         interaction
