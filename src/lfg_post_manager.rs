@@ -21,21 +21,23 @@ pub struct LfgPostData {
 
 impl LfgPostData {
     pub fn new(
-        owner: UserId,
-        activity: String,
+        owner: impl Into<UserId>,
+        activity: impl Into<String>,
         start_time: DateTime<Utc>,
-        description: String,
-        fireteam_size: u8,
+        description: impl Into<String>,
+        fireteam_size: impl Into<u8>,
     ) -> Self {
+        let owner = owner.into();
+
         let mut fireteam = HashSet::with_capacity(6);
         fireteam.insert(owner);
 
         Self {
             owner,
-            activity,
+            activity: activity.into(),
             start_time,
-            description,
-            fireteam_size,
+            description: description.into(),
+            fireteam_size: fireteam_size.into(),
             fireteam,
         }
     }
