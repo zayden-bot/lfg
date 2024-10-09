@@ -5,12 +5,13 @@ use lazy_static::lazy_static;
 use serenity::all::{
     ButtonStyle, ChannelId, Context, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter,
     CreateForumPost, CreateInputText, CreateMessage, CreateModal, InputTextStyle, Mentionable,
-    ModalInteraction,
+    MessageId, ModalInteraction,
 };
 use zayden_core::parse_modal_data;
 
+use crate::lfg_post_manager::LfgPostData;
 use crate::slash_command::ACTIVITY_MAP;
-use crate::Result;
+use crate::{LfgPostManager, Result};
 
 const LFG_CHANNEL: ChannelId = ChannelId::new(1091736203029659728);
 
@@ -61,13 +62,15 @@ impl LfgCreateModal {
         let values = parse_modal_data(&interaction.data.components);
 
         let activity = values[0];
+        let fireteam_size = values[2].parse::<u8>()?;
         let description = match values.get(3) {
             Some(description) => *description,
             None => activity,
         };
 
         let naive_dt = NaiveDateTime::parse_from_str(values[1], "%Y-%m-%d %H:%M").unwrap();
-        let timestamp = naive_dt.and_utc().timestamp();
+        let start_time = naive_dt.and_utc();
+        let timestamp = start_time.timestamp();
 
         let embed = CreateEmbed::new()
             .title(format!("{} - <t:{}>", activity, timestamp))
@@ -75,7 +78,7 @@ impl LfgCreateModal {
             .field("Start Time", format!("<t:{}:R>", timestamp), true)
             .field("Description", description, false)
             .field(
-                format!("Joined: 1/{}", values[2]),
+                format!("Joined: 1/{}", fireteam_size),
                 interaction.user.mention().to_string(),
                 false,
             )
@@ -101,19 +104,31 @@ impl LfgCreateModal {
 
         let row = vec![CreateActionRow::Buttons(buttons)];
 
-        LFG_CHANNEL
+        let post = LFG_CHANNEL
             .create_forum_post(
                 ctx,
                 CreateForumPost::new(
-                    format!(
-                        "{} - {} UTC",
-                        activity,
-                        naive_dt.and_utc().format("%d %b %H:%M")
-                    ),
+                    format!("{} - {} UTC", activity, start_time.format("%d %b %H:%M")),
                     CreateMessage::new().embed(embed).components(row),
                 ),
             )
             .await?;
+
+        let mut data = ctx.data.write().await;
+        let manager = data
+            .get_mut::<LfgPostManager>()
+            .expect("Expected LfgPostManager in TypeMap");
+
+        manager.insert(
+            MessageId::new(post.id.get()),
+            LfgPostData::new(
+                interaction.user.id,
+                activity,
+                start_time,
+                description,
+                fireteam_size,
+            ),
+        );
 
         Ok(())
     }
