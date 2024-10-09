@@ -3,15 +3,14 @@ use std::collections::HashMap;
 use chrono::NaiveDateTime;
 use lazy_static::lazy_static;
 use serenity::all::{
-    ButtonStyle, ChannelId, Context, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter,
-    CreateForumPost, CreateInputText, CreateMessage, CreateModal, InputTextStyle, Mentionable,
-    MessageId, ModalInteraction,
+    ButtonStyle, ChannelId, Context, CreateActionRow, CreateButton, CreateForumPost,
+    CreateInputText, CreateMessage, CreateModal, InputTextStyle, MessageId, ModalInteraction,
 };
 use zayden_core::parse_modal_data;
 
 use crate::lfg_post_manager::LfgPostData;
 use crate::slash_command::ACTIVITY_MAP;
-use crate::{LfgPostManager, Result};
+use crate::{create_lfg_embed, LfgPostManager, Result};
 
 const LFG_CHANNEL: ChannelId = ChannelId::new(1091736203029659728);
 
@@ -72,20 +71,14 @@ impl LfgCreateModal {
         let start_time = naive_dt.and_utc();
         let timestamp = start_time.timestamp();
 
-        let embed = CreateEmbed::new()
-            .title(format!("{} - <t:{}>", activity, timestamp))
-            .field("Activity", activity, true)
-            .field("Start Time", format!("<t:{}:R>", timestamp), true)
-            .field("Description", description, false)
-            .field(
-                format!("Joined: 1/{}", fireteam_size),
-                interaction.user.mention().to_string(),
-                false,
-            )
-            .footer(CreateEmbedFooter::new(format!(
-                "Posted by {}",
-                interaction.user.name
-            )));
+        let embed = create_lfg_embed(
+            activity,
+            timestamp,
+            description,
+            &[interaction.user.id].into_iter().collect(),
+            fireteam_size,
+            interaction.user.id,
+        );
 
         let buttons = vec![
             CreateButton::new("lfg_join")

@@ -1,10 +1,8 @@
 use serenity::all::{
-    ComponentInteraction, ComponentInteractionDataKind, Context, CreateEmbed,
-    CreateInteractionResponse, CreateInteractionResponseMessage, Mentionable,
+    ComponentInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
 };
 
-use crate::modal::create_modal;
-use crate::{Error, LfgPostManager, Result};
+use crate::{create_lfg_embed, Error, LfgPostManager, Result};
 
 pub struct PostComponents;
 
@@ -23,20 +21,20 @@ impl PostComponents {
 
         post.fireteam.insert(interaction.user.id);
 
-        let mut embed = interaction.message.embeds[0].clone();
-        let field = embed.fields.last_mut().unwrap();
-        field.value = post
-            .fireteam
-            .iter()
-            .map(|id| id.mention().to_string())
-            .collect::<Vec<_>>()
-            .join("\n");
+        let embed = create_lfg_embed(
+            &post.activity,
+            post.start_time.timestamp(),
+            &post.description,
+            &post.fireteam,
+            post.fireteam_size,
+            post.owner,
+        );
 
         interaction
             .create_response(
                 ctx,
                 CreateInteractionResponse::UpdateMessage(
-                    CreateInteractionResponseMessage::new().embed(embed.into()),
+                    CreateInteractionResponseMessage::new().embed(embed),
                 ),
             )
             .await?;
