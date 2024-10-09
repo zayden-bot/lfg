@@ -4,7 +4,7 @@ mod lfg_post_manager;
 mod modal;
 mod slash_command;
 
-pub use components::ActivityComponent;
+pub use components::{ActivityComponent, PostComponents};
 pub use error::Error;
 use error::Result;
 pub use lfg_post_manager::LfgPostManager;
