@@ -11,7 +11,9 @@ pub use error::Error;
 use error::Result;
 pub use lfg_post_manager::LfgPostManager;
 pub use modal::LfgCreateModal;
-use serenity::all::{CreateEmbed, CreateEmbedFooter, Mentionable, UserId};
+use serenity::all::{
+    ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, Mentionable, UserId,
+};
 pub use slash_command::LfgCommand;
 
 fn create_lfg_embed(
@@ -39,4 +41,23 @@ fn create_lfg_embed(
             false,
         )
         .footer(CreateEmbedFooter::new(format!("Posted by {}", owner_name)))
+}
+
+fn create_main_row() -> CreateActionRow {
+    CreateActionRow::Buttons(vec![
+        CreateButton::new("lfg_join")
+            .emoji('➕')
+            .style(ButtonStyle::Success),
+        CreateButton::new("lfg_leave")
+            .emoji('➖')
+            .style(ButtonStyle::Danger),
+        CreateButton::new("lfg_alternative")
+            .emoji('❔')
+            .style(ButtonStyle::Secondary)
+            .disabled(true),
+        CreateButton::new("lfg_settings")
+            .emoji('⚙')
+            .style(ButtonStyle::Secondary)
+            .disabled(true),
+    ])
 }

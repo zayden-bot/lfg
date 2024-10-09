@@ -3,14 +3,14 @@ use std::collections::HashMap;
 use chrono::NaiveDateTime;
 use lazy_static::lazy_static;
 use serenity::all::{
-    ButtonStyle, ChannelId, Context, CreateActionRow, CreateButton, CreateForumPost,
-    CreateInputText, CreateMessage, CreateModal, InputTextStyle, MessageId, ModalInteraction,
+    ChannelId, Context, CreateActionRow, CreateForumPost, CreateInputText, CreateMessage,
+    CreateModal, InputTextStyle, MessageId, ModalInteraction,
 };
 use zayden_core::parse_modal_data;
 
 use crate::lfg_post_manager::LfgPostData;
 use crate::slash_command::ACTIVITY_MAP;
-use crate::{create_lfg_embed, LfgPostManager, Result};
+use crate::{create_lfg_embed, create_main_row, LfgPostManager, Result};
 
 const LFG_CHANNEL: ChannelId = ChannelId::new(1091736203029659728);
 
@@ -80,31 +80,14 @@ impl LfgCreateModal {
             &interaction.user.name,
         );
 
-        let buttons = vec![
-            CreateButton::new("lfg_join")
-                .emoji('➕')
-                .style(ButtonStyle::Success),
-            CreateButton::new("lfg_leave")
-                .emoji('➖')
-                .style(ButtonStyle::Danger),
-            CreateButton::new("lfg_alternative")
-                .emoji('❔')
-                .style(ButtonStyle::Secondary)
-                .disabled(true),
-            CreateButton::new("lfg_settings")
-                .emoji('⚙')
-                .style(ButtonStyle::Secondary)
-                .disabled(true),
-        ];
-
-        let row = vec![CreateActionRow::Buttons(buttons)];
+        let row = create_main_row();
 
         let post = LFG_CHANNEL
             .create_forum_post(
                 ctx,
                 CreateForumPost::new(
                     format!("{} - {} UTC", activity, start_time.format("%d %b %H:%M")),
-                    CreateMessage::new().embed(embed).components(row),
+                    CreateMessage::new().embed(embed).components(vec![row]),
                 ),
             )
             .await?;
