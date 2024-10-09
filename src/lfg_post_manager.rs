@@ -29,16 +29,13 @@ impl LfgPostData {
     ) -> Self {
         let owner = owner.into();
 
-        let mut fireteam = HashSet::with_capacity(6);
-        fireteam.insert(owner);
-
         Self {
             owner,
             activity: activity.into(),
             start_time,
             description: description.into(),
             fireteam_size: fireteam_size.into(),
-            fireteam,
+            fireteam: [owner].into_iter().collect(),
         }
     }
 }
