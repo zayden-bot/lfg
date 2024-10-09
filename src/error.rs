@@ -6,6 +6,7 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     FireteamFull,
 
+    ParseInt(std::num::ParseIntError),
     Serenity(serenity::Error),
 }
 
@@ -25,6 +26,12 @@ impl std::fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
+
+impl From<std::num::ParseIntError> for Error {
+    fn from(error: std::num::ParseIntError) -> Self {
+        Self::ParseInt(error)
+    }
+}
 
 impl From<serenity::Error> for Error {
     fn from(error: serenity::Error) -> Self {
