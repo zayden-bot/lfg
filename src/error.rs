@@ -4,12 +4,17 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
+    FireteamFull,
+
     Serenity(serenity::Error),
 }
 
 impl ErrorResponse for Error {
     fn to_response(&self) -> String {
-        String::new()
+        match self {
+            Self::FireteamFull => String::from("Unable to join. Fireteam is full"),
+            _ => String::new(),
+        }
     }
 }
 
