@@ -42,7 +42,43 @@ impl PostComponents {
         Ok(())
     }
 
-    pub async fn leave(ctx: &Context, interaction: &ComponentInteraction) {}
+    pub async fn leave(ctx: &Context, interaction: &ComponentInteraction) -> Result<()> {
+        let mut data = ctx.data.write().await;
+        let manager = data
+            .get_mut::<LfgPostManager>()
+            .expect("Expected LfgPostManager in TypeMap");
+
+        let post = manager.get_mut(&interaction.message.id).unwrap();
+
+        let changed = post.fireteam.remove(&interaction.user.id);
+
+        if !changed {
+            interaction
+                .create_response(ctx, CreateInteractionResponse::Acknowledge)
+                .await?;
+            return Ok(());
+        }
+
+        let embed = create_lfg_embed(
+            &post.activity,
+            post.start_time.timestamp(),
+            &post.description,
+            &post.fireteam,
+            post.fireteam_size,
+            &post.owner.to_user(ctx).await?.name,
+        );
+
+        interaction
+            .create_response(
+                ctx,
+                CreateInteractionResponse::UpdateMessage(
+                    CreateInteractionResponseMessage::new().embed(embed),
+                ),
+            )
+            .await?;
+
+        Ok(())
+    }
 
     pub async fn alternative(ctx: &Context, interaction: &ComponentInteraction) {}
 }
