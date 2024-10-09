@@ -92,11 +92,11 @@ impl LfgCreateModal {
                 .emoji('➖')
                 .style(ButtonStyle::Danger),
             CreateButton::new("lfg_alternative")
-                .emoji('🔄')
+                .emoji('❔')
                 .style(ButtonStyle::Secondary),
             CreateButton::new("lfg_settings")
                 .emoji('⚙')
-                .style(ButtonStyle::Primary),
+                .style(ButtonStyle::Secondary),
         ];
 
         let row = vec![CreateActionRow::Buttons(buttons)];
