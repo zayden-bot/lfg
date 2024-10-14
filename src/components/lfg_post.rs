@@ -80,5 +80,7 @@ impl PostComponents {
         Ok(())
     }
 
-    pub async fn alternative(ctx: &Context, interaction: &ComponentInteraction) {}
+    pub async fn alternative(_ctx: &Context, _interaction: &ComponentInteraction) {
+        todo!()
+    }
 }
