@@ -38,7 +38,7 @@ pub fn create_modal(activity: &str) -> CreateModal {
         ),
         CreateActionRow::InputText(
             CreateInputText::new(InputTextStyle::Short, "Start Time", "start time")
-                .placeholder("YYYY-MM-DD HH:MM"),
+                .value(format!("{}", chrono::Utc::now().format("%Y-%m-%d %H:%M"))),
         ),
         CreateActionRow::InputText(
             CreateInputText::new(InputTextStyle::Short, "Fireteam Size", "fireteam size")
