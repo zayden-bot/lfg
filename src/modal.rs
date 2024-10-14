@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use chrono::NaiveDateTime;
 use lazy_static::lazy_static;
 use serenity::all::{
-    ChannelId, Context, CreateActionRow, CreateForumPost, CreateInputText, CreateMessage,
-    CreateModal, InputTextStyle, MessageId, ModalInteraction,
+    AutoArchiveDuration, ChannelId, Context, CreateActionRow, CreateForumPost, CreateInputText,
+    CreateMessage, CreateModal, InputTextStyle, Mentionable, MessageId, ModalInteraction,
 };
 use zayden_core::parse_modal_data;
 
@@ -58,6 +58,14 @@ pub struct LfgCreateModal;
 
 impl LfgCreateModal {
     pub async fn run(ctx: &Context, interaction: &ModalInteraction) -> Result<()> {
+        println!(
+            "{}\n{:?}\n{:?}\n{:?}",
+            interaction.locale,
+            interaction.user.locale,
+            interaction.user.flags,
+            interaction.user.public_flags
+        );
+
         let values = parse_modal_data(&interaction.data.components);
 
         let activity = values[0];
@@ -82,13 +90,23 @@ impl LfgCreateModal {
 
         let row = create_main_row();
 
-        let post = LFG_CHANNEL
+        let channel = LFG_CHANNEL
             .create_forum_post(
                 ctx,
                 CreateForumPost::new(
                     format!("{} - {} UTC", activity, start_time.format("%d %b %H:%M")),
                     CreateMessage::new().embed(embed).components(vec![row]),
-                ),
+                )
+                .auto_archive_duration(AutoArchiveDuration::OneWeek),
+            )
+            .await?;
+
+        // TODO: Add thread tags based on description
+
+        channel
+            .send_message(
+                ctx,
+                CreateMessage::new().content(interaction.user.mention().to_string()),
             )
             .await?;
 
@@ -98,7 +116,7 @@ impl LfgCreateModal {
             .expect("Expected LfgPostManager in TypeMap");
 
         manager.insert(
-            MessageId::new(post.id.get()),
+            MessageId::new(channel.id.get()),
             LfgPostData::new(
                 interaction.user.id,
                 activity,
