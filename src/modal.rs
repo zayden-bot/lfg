@@ -105,14 +105,6 @@ pub struct LfgCreateModal;
 
 impl LfgCreateModal {
     pub async fn run(ctx: &Context, interaction: &ModalInteraction) -> Result<()> {
-        println!(
-            "{}\n{:?}\n{:?}\n{:?}",
-            interaction.locale,
-            interaction.user.locale,
-            interaction.user.flags,
-            interaction.user.public_flags
-        );
-
         let values = parse_modal_data(&interaction.data.components);
 
         let activity = values[0];
