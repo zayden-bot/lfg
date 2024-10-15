@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use chrono::{DateTime, TimeZone, Utc};
+use chrono::{NaiveDateTime, TimeZone, Utc};
 use lazy_static::lazy_static;
 use serenity::all::{
     AutoArchiveDuration, ChannelId, Context, CreateActionRow, CreateForumPost, CreateInputText,
@@ -80,7 +80,7 @@ pub fn create_modal(activity: &str, locale: &str) -> CreateModal {
             CreateInputText::new(
                 InputTextStyle::Short,
                 format!("Start Time ({})", tz_abbr),
-                format!("start time:{}", tz_abbr),
+                format!("start time:{}", timezone),
             )
             .value(format!("{}", now_timezone.format("%Y-%m-%d %H:%M"))),
         ),
@@ -121,20 +121,20 @@ impl LfgCreateModal {
             .find(|(key, _)| key.starts_with("start time:"))
             .expect("Start time should exist as it's required");
 
-        println!("{}", start_time_id);
-
-        let tz_str = {
+        let timezone = {
             let start = start_time_id
                 .find(':')
                 .expect("Start time label should have a timezone");
             &start_time_id[(start + 1)..]
+        }
+        .parse::<chrono_tz::Tz>()?;
+
+        let start_time = {
+            let native_time =
+                NaiveDateTime::parse_from_str(start_time_value, "%Y-%m-%d %H:%M").unwrap();
+            timezone.from_local_datetime(&native_time).single().unwrap()
         };
 
-        println!("{}", tz_str);
-
-        let start_time =
-            DateTime::parse_from_str(&format!("{} +0000", start_time_value), "%Y-%m-%d %H:%M %z")
-                .unwrap();
         let timestamp = start_time.timestamp();
 
         let embed = create_lfg_embed(
@@ -152,7 +152,7 @@ impl LfgCreateModal {
             .create_forum_post(
                 ctx,
                 CreateForumPost::new(
-                    format!("{} - {} UTC", activity, start_time.format("%d %b %H:%M")),
+                    format!("{} - {}", activity, start_time.format("%d %b %H:%M %Z")),
                     CreateMessage::new().embed(embed).components(vec![row]),
                 )
                 .auto_archive_duration(AutoArchiveDuration::OneWeek),
@@ -178,7 +178,7 @@ impl LfgCreateModal {
             LfgPostData::new(
                 interaction.user.id,
                 activity,
-                start_time.to_utc(),
+                start_time,
                 description,
                 fireteam_size,
             ),
