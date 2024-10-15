@@ -5,6 +5,7 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug)]
 pub enum Error {
     FireteamFull,
+    PostNotFound,
 
     ParseInt(std::num::ParseIntError),
     Serenity(serenity::Error),
@@ -15,6 +16,9 @@ impl ErrorResponse for Error {
     fn to_response(&self) -> String {
         match self {
             Self::FireteamFull => String::from("Unable to join. Fireteam is full"),
+            Self::PostNotFound => String::from(
+                "Post not found, please message <@211486447369322506> if the issue persists",
+            ),
             _ => String::new(),
         }
     }
