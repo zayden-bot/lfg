@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, TimeZone, Utc};
 use lazy_static::lazy_static;
 use serenity::all::{
     AutoArchiveDuration, ChannelId, Context, CreateActionRow, CreateForumPost, CreateInputText,
@@ -24,21 +24,68 @@ lazy_static! {
         m.insert("Iron Banner", 6);
         m
     };
+    static ref LOCALE_TO_TIMEZONE: HashMap<&'static str, chrono_tz::Tz> = {
+        let mut m = HashMap::new();
+        m.insert("id", chrono_tz::Asia::Jakarta);
+        m.insert("da", chrono_tz::Europe::Copenhagen);
+        m.insert("de", chrono_tz::Europe::Berlin);
+        m.insert("en-GB", chrono_tz::Europe::London);
+        m.insert("en-US", chrono_tz::America::New_York);
+        m.insert("es-ES", chrono_tz::Europe::Madrid);
+        m.insert("es-419", chrono_tz::America::Mexico_City);
+        m.insert("fr", chrono_tz::Europe::Paris);
+        m.insert("hr", chrono_tz::Europe::Zagreb);
+        m.insert("it", chrono_tz::Europe::Rome);
+        m.insert("lt", chrono_tz::Europe::Vilnius);
+        m.insert("hu", chrono_tz::Europe::Budapest);
+        m.insert("nl", chrono_tz::Europe::Amsterdam);
+        m.insert("no", chrono_tz::Europe::Oslo);
+        m.insert("pl", chrono_tz::Europe::Warsaw);
+        m.insert("pt-BR", chrono_tz::America::Sao_Paulo);
+        m.insert("ro", chrono_tz::Europe::Bucharest);
+        m.insert("fi", chrono_tz::Europe::Helsinki);
+        m.insert("sv-SE", chrono_tz::Europe::Stockholm);
+        m.insert("vi", chrono_tz::Asia::Ho_Chi_Minh);
+        m.insert("tr", chrono_tz::Europe::Istanbul);
+        m.insert("cs", chrono_tz::Europe::Prague);
+        m.insert("el", chrono_tz::Europe::Athens);
+        m.insert("bg", chrono_tz::Europe::Sofia);
+        m.insert("ru", chrono_tz::Europe::Moscow);
+        m.insert("uk", chrono_tz::Europe::Kiev);
+        m.insert("hi", chrono_tz::Asia::Kolkata);
+        m.insert("th", chrono_tz::Asia::Bangkok);
+        m.insert("zh-CN", chrono_tz::Asia::Shanghai);
+        m.insert("ja", chrono_tz::Asia::Tokyo);
+        m.insert("zh-TW", chrono_tz::Asia::Taipei);
+        m.insert("ko", chrono_tz::Asia::Seoul);
+        m
+    };
 }
 
-pub fn create_modal(activity: &str) -> CreateModal {
+pub fn create_modal(activity: &str, locale: &str) -> CreateModal {
     let fireteam_size = match MAX_FIRETEAM_SIZE.get(activity) {
         Some(fireteam_size) => *fireteam_size,
         None => 3,
     };
+
+    let timezone = LOCALE_TO_TIMEZONE.get(locale).unwrap_or(&chrono_tz::UTC);
+    let now_timezone = timezone.from_utc_datetime(&Utc::now().naive_utc());
+    let tz_abbr = now_timezone.format("%Z").to_string();
+
+    let offset = now_timezone.format("%:z").to_string();
+    println!("{}", offset);
 
     let row = vec![
         CreateActionRow::InputText(
             CreateInputText::new(InputTextStyle::Short, "Activity", "activity").value(activity),
         ),
         CreateActionRow::InputText(
-            CreateInputText::new(InputTextStyle::Short, "Start Time", "start time")
-                .value(format!("{}", chrono::Utc::now().format("%Y-%m-%d %H:%M"))),
+            CreateInputText::new(
+                InputTextStyle::Short,
+                format!("Start Time ({})", tz_abbr),
+                "start time",
+            )
+            .value(format!("{}", now_timezone.format("%Y-%m-%d %H:%M"))),
         ),
         CreateActionRow::InputText(
             CreateInputText::new(InputTextStyle::Short, "Fireteam Size", "fireteam size")
@@ -75,8 +122,8 @@ impl LfgCreateModal {
             None => activity,
         };
 
-        let naive_dt = NaiveDateTime::parse_from_str(values[1], "%Y-%m-%d %H:%M").unwrap();
-        let start_time = naive_dt.and_utc();
+        let start_time =
+            DateTime::parse_from_str(&format!("{} +0000", values[1]), "%Y-%m-%d %H:%M %z").unwrap();
         let timestamp = start_time.timestamp();
 
         let embed = create_lfg_embed(
@@ -120,7 +167,7 @@ impl LfgCreateModal {
             LfgPostData::new(
                 interaction.user.id,
                 activity,
-                start_time,
+                start_time.to_utc(),
                 description,
                 fireteam_size,
             ),

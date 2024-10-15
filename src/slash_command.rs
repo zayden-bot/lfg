@@ -102,7 +102,7 @@ impl LfgCommand {
         } else {
             interaction.delete_response(ctx).await?;
 
-            let modal = create_modal(activity);
+            let modal = create_modal(activity, &interaction.locale);
 
             interaction
                 .create_response(ctx, CreateInteractionResponse::Modal(modal))

@@ -14,7 +14,9 @@ impl ActivityComponent {
             _ => unreachable!("Activity is required"),
         };
 
-        let modal = create_modal(activity);
+        // interaction.locale;
+
+        let modal = create_modal(activity, &interaction.locale);
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Modal(modal))
