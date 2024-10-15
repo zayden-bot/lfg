@@ -8,6 +8,7 @@ chrono = { version = "*", default-features = false, features = [
     "alloc",
     "now",
 ] }
+chrono-tz = { version = "*", default-features = false }
 lazy_static = { version = "*", default-features = false }
 zayden-core = { git = "https://github.com/zayden-bot/slash-command-core.git", branch = "master" }
 
