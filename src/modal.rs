@@ -30,7 +30,7 @@ lazy_static! {
         m.insert("da", chrono_tz::Europe::Copenhagen);
         m.insert("de", chrono_tz::Europe::Berlin);
         m.insert("en-GB", chrono_tz::Europe::London);
-        m.insert("en-US", chrono_tz::America::New_York);
+        // m.insert("en-US", chrono_tz::America::New_York);
         m.insert("es-ES", chrono_tz::Europe::Madrid);
         m.insert("es-419", chrono_tz::America::Mexico_City);
         m.insert("fr", chrono_tz::Europe::Paris);
