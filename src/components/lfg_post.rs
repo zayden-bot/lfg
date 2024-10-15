@@ -48,7 +48,9 @@ impl PostComponents {
             .get_mut::<LfgPostManager>()
             .expect("Expected LfgPostManager in TypeMap");
 
-        let post = manager.get_mut(&interaction.message.id).unwrap();
+        let post = manager
+            .get_mut(&interaction.message.id)
+            .ok_or(Error::PostNotFound)?;
 
         let changed = post.fireteam.remove(&interaction.user.id);
 
