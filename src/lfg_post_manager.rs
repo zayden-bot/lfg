@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
-use chrono::{DateTime, Utc};
+use chrono::DateTime;
+use chrono_tz::Tz;
 use serenity::all::{MessageId, UserId};
 use serenity::prelude::TypeMapKey;
 
@@ -13,7 +14,7 @@ impl TypeMapKey for LfgPostManager {
 pub struct LfgPostData {
     pub owner: UserId,
     pub activity: String,
-    pub start_time: DateTime<Utc>,
+    pub start_time: DateTime<Tz>,
     pub description: String,
     pub fireteam_size: u8,
     pub fireteam: HashSet<UserId>,
@@ -23,7 +24,7 @@ impl LfgPostData {
     pub fn new(
         owner: impl Into<UserId>,
         activity: impl Into<String>,
-        start_time: DateTime<Utc>,
+        start_time: DateTime<Tz>,
         description: impl Into<String>,
         fireteam_size: impl Into<u8>,
     ) -> Self {
