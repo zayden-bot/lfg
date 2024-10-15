@@ -80,7 +80,7 @@ pub fn create_modal(activity: &str, locale: &str) -> CreateModal {
             CreateInputText::new(
                 InputTextStyle::Short,
                 format!("Start Time ({})", tz_abbr),
-                "start time",
+                format!("start time:{}", tz_abbr),
             )
             .value(format!("{}", now_timezone.format("%Y-%m-%d %H:%M"))),
         ),
@@ -106,55 +106,35 @@ impl LfgCreateModal {
 
         let activity = inputs
             .remove("activity")
-            .expect("Activity should exist as it's required")
-            .value
-            .as_deref()
-            .expect("Activity should have a value when receiving");
+            .expect("Activity should exist as it's required");
         let fireteam_size = inputs
             .remove("fireteam size")
             .expect("Fireteam size should exist as it's required")
-            .value
-            .as_deref()
-            .expect("Fireteam size should have a value when receiving")
             .parse::<u8>()?;
         let description = match inputs.remove("description") {
-            Some(description) => description
-                .value
-                .as_deref()
-                .expect("Description should have a value when receiving"),
+            Some(description) => description,
             None => activity,
         };
 
-        let start_time_input = inputs
-            .remove("start time")
+        let (start_time_id, start_time_value) = inputs
+            .into_iter()
+            .find(|(key, _)| key.starts_with("start time:"))
             .expect("Start time should exist as it's required");
 
-        println!("{}", start_time_input.label.as_deref().unwrap());
+        println!("{}", start_time_id);
 
         let tz_str = {
-            let label = start_time_input.label.as_deref().unwrap();
-            let start = label
-                .find('(')
+            let start = start_time_id
+                .find(':')
                 .expect("Start time label should have a timezone");
-            let end = label
-                .find(')')
-                .expect("Start time label should have a timezone");
-            label[(start + 1)..end].to_string()
+            &start_time_id[(start + 1)..]
         };
 
         println!("{}", tz_str);
 
-        let start_time = DateTime::parse_from_str(
-            &format!(
-                "{} +0000",
-                start_time_input
-                    .value
-                    .as_deref()
-                    .expect("Start time should have a value when receiving")
-            ),
-            "%Y-%m-%d %H:%M %z",
-        )
-        .unwrap();
+        let start_time =
+            DateTime::parse_from_str(&format!("{} +0000", start_time_value), "%Y-%m-%d %H:%M %z")
+                .unwrap();
         let timestamp = start_time.timestamp();
 
         let embed = create_lfg_embed(
