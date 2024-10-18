@@ -64,7 +64,6 @@ fn create_main_row() -> CreateActionRow {
             .style(ButtonStyle::Secondary),
         CreateButton::new("lfg_settings")
             .emoji('⚙')
-            .style(ButtonStyle::Secondary)
-            .disabled(true),
+            .style(ButtonStyle::Secondary),
     ])
 }
