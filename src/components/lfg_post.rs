@@ -26,9 +26,9 @@ impl PostComponents {
         post.join(interaction.user.id);
 
         let embed = create_lfg_embed(
-            post.activity(),
+            &post.activity,
             post.timestamp(),
-            post.description(),
+            &post.description,
             &post.fireteam(),
             post.fireteam_size(),
             &post.owner(ctx).await?.name,
@@ -62,9 +62,9 @@ impl PostComponents {
         post.leave(interaction.user.id);
 
         let embed = create_lfg_embed(
-            post.activity(),
+            &post.activity,
             post.timestamp(),
-            post.description(),
+            &post.description,
             &post.fireteam(),
             post.fireteam_size(),
             &post.owner(ctx).await?.name,

@@ -25,13 +25,13 @@ pub trait LfgPostManager<Db: sqlx::Database> {
 
 #[derive(FromRow)]
 pub struct LfgPostRow {
-    id: i64,
-    owner_id: i64,
-    activity: String,
-    start_time: DateTime<FixedOffset>,
-    description: String,
-    fireteam_size: i16,
-    fireteam_ids: Vec<i64>,
+    pub id: i64,
+    pub owner_id: i64,
+    pub activity: String,
+    pub start_time: DateTime<FixedOffset>,
+    pub description: String,
+    pub fireteam_size: i16,
+    pub fireteam_ids: Vec<i64>,
 }
 
 impl LfgPostRow {
@@ -61,16 +61,8 @@ impl LfgPostRow {
         owner_id.to_user(ctx).await
     }
 
-    pub fn activity(&self) -> &str {
-        &self.activity
-    }
-
     pub fn timestamp(&self) -> i64 {
         self.start_time.timestamp()
-    }
-
-    pub fn description(&self) -> &str {
-        &self.description
     }
 
     pub fn fireteam(&self) -> Vec<UserId> {
