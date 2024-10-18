@@ -6,6 +6,7 @@ use serenity::all::{
     AutoArchiveDuration, ChannelId, Context, CreateActionRow, CreateForumPost, CreateInputText,
     CreateMessage, CreateModal, InputTextStyle, Mentionable, ModalInteraction,
 };
+use sqlx::Pool;
 use zayden_core::parse_modal_data;
 
 use crate::slash_command::ACTIVITY_MAP;
@@ -100,7 +101,11 @@ pub fn create_modal(activity: &str, locale: &str) -> CreateModal {
 pub struct LfgCreateModal;
 
 impl LfgCreateModal {
-    pub async fn run<Db, Manager>(ctx: &Context, interaction: &ModalInteraction) -> Result<()>
+    pub async fn run<Db, Manager>(
+        ctx: &Context,
+        interaction: &ModalInteraction,
+        pool: &Pool<Db>,
+    ) -> Result<()>
     where
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
@@ -172,6 +177,7 @@ impl LfgCreateModal {
             .await?;
 
         Manager::create(
+            pool,
             channel.id.get(),
             interaction.user.id,
             activity,

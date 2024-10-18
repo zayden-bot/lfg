@@ -1,18 +1,23 @@
 use serenity::all::{
     ComponentInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
 };
+use sqlx::Pool;
 
 use crate::{create_lfg_embed, Error, LfgPostManager, Result};
 
 pub struct PostComponents;
 
 impl PostComponents {
-    pub async fn join<Db, Manager>(ctx: &Context, interaction: &ComponentInteraction) -> Result<()>
+    pub async fn join<Db, Manager>(
+        ctx: &Context,
+        interaction: &ComponentInteraction,
+        pool: &Pool<Db>,
+    ) -> Result<()>
     where
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let mut post = Manager::get(&interaction.message.id).await?;
+        let mut post = Manager::get(pool, &interaction.message.id).await?;
 
         if post.is_full() {
             return Err(Error::FireteamFull);
@@ -29,7 +34,7 @@ impl PostComponents {
             &post.owner.to_user(ctx).await?.name,
         );
 
-        Manager::save(post).await?;
+        Manager::save(pool, post).await?;
 
         interaction
             .create_response(
@@ -43,12 +48,16 @@ impl PostComponents {
         Ok(())
     }
 
-    pub async fn leave<Db, Manager>(ctx: &Context, interaction: &ComponentInteraction) -> Result<()>
+    pub async fn leave<Db, Manager>(
+        ctx: &Context,
+        interaction: &ComponentInteraction,
+        pool: &Pool<Db>,
+    ) -> Result<()>
     where
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let mut post = Manager::get(&interaction.message.id).await?;
+        let mut post = Manager::get(pool, interaction.message.id).await?;
 
         post.leave(interaction.user.id);
 
@@ -61,7 +70,7 @@ impl PostComponents {
             &post.owner.to_user(ctx).await?.name,
         );
 
-        Manager::save(post).await?;
+        Manager::save(pool, post).await?;
 
         interaction
             .create_response(

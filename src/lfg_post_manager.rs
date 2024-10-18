@@ -8,6 +8,7 @@ use sqlx::prelude::FromRow;
 #[async_trait]
 pub trait LfgPostManager<Db: sqlx::Database> {
     async fn create(
+        pool: &sqlx::Pool<Db>,
         id: impl Into<MessageId>,
         owner: impl Into<UserId>,
         activity: impl Into<String>,
@@ -16,9 +17,9 @@ pub trait LfgPostManager<Db: sqlx::Database> {
         fireteam_size: impl Into<u8>,
     ) -> sqlx::Result<AnyQueryResult>;
 
-    async fn get(id: impl Into<MessageId>) -> sqlx::Result<LfgPostRow>;
+    async fn get(pool: &sqlx::Pool<Db>, id: impl Into<MessageId>) -> sqlx::Result<LfgPostRow>;
 
-    async fn save(post: LfgPostRow) -> sqlx::Result<AnyQueryResult>;
+    async fn save(pool: &sqlx::Pool<Db>, post: LfgPostRow) -> sqlx::Result<AnyQueryResult>;
 }
 
 #[derive(FromRow)]
