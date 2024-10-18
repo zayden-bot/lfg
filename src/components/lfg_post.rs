@@ -7,19 +7,18 @@ use crate::{create_lfg_embed, Error, LfgPostManager, Result};
 pub struct PostComponents;
 
 impl PostComponents {
-    pub async fn join(ctx: &Context, interaction: &ComponentInteraction) -> Result<()> {
-        let mut data = ctx.data.write().await;
-        let manager = data
-            .get_mut::<LfgPostManager>()
-            .expect("Expected LfgPostManager in TypeMap");
+    pub async fn join<Db, Manager>(ctx: &Context, interaction: &ComponentInteraction) -> Result<()>
+    where
+        Db: sqlx::Database,
+        Manager: LfgPostManager<Db>,
+    {
+        let mut post = Manager::get(&interaction.message.id).await?;
 
-        let post = manager.get_mut(&interaction.message.id).unwrap();
-
-        if (post.fireteam.len() as u8) == post.fireteam_size {
+        if post.is_full() {
             return Err(Error::FireteamFull);
         }
 
-        post.fireteam.insert(interaction.user.id);
+        post.join(interaction.user.id);
 
         let embed = create_lfg_embed(
             &post.activity,
@@ -29,6 +28,8 @@ impl PostComponents {
             post.fireteam_size,
             &post.owner.to_user(ctx).await?.name,
         );
+
+        Manager::save(post).await?;
 
         interaction
             .create_response(
@@ -42,24 +43,14 @@ impl PostComponents {
         Ok(())
     }
 
-    pub async fn leave(ctx: &Context, interaction: &ComponentInteraction) -> Result<()> {
-        let mut data = ctx.data.write().await;
-        let manager = data
-            .get_mut::<LfgPostManager>()
-            .expect("Expected LfgPostManager in TypeMap");
+    pub async fn leave<Db, Manager>(ctx: &Context, interaction: &ComponentInteraction) -> Result<()>
+    where
+        Db: sqlx::Database,
+        Manager: LfgPostManager<Db>,
+    {
+        let mut post = Manager::get(&interaction.message.id).await?;
 
-        let post = manager
-            .get_mut(&interaction.message.id)
-            .ok_or(Error::PostNotFound)?;
-
-        let changed = post.fireteam.remove(&interaction.user.id);
-
-        if !changed {
-            interaction
-                .create_response(ctx, CreateInteractionResponse::Acknowledge)
-                .await?;
-            return Ok(());
-        }
+        post.leave(interaction.user.id);
 
         let embed = create_lfg_embed(
             &post.activity,
@@ -69,6 +60,8 @@ impl PostComponents {
             post.fireteam_size,
             &post.owner.to_user(ctx).await?.name,
         );
+
+        Manager::save(post).await?;
 
         interaction
             .create_response(

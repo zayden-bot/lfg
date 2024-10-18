@@ -10,6 +10,7 @@ pub enum Error {
     ParseInt(std::num::ParseIntError),
     Serenity(serenity::Error),
     ChronoTzParseError(chrono_tz::ParseError),
+    Sqlx(sqlx::Error),
 }
 
 impl ErrorResponse for Error {
@@ -47,5 +48,11 @@ impl From<serenity::Error> for Error {
 impl From<chrono_tz::ParseError> for Error {
     fn from(error: chrono_tz::ParseError) -> Self {
         Self::ChronoTzParseError(error)
+    }
+}
+
+impl From<sqlx::Error> for Error {
+    fn from(error: sqlx::Error) -> Self {
+        Self::Sqlx(error)
     }
 }

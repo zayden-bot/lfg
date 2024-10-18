@@ -4,11 +4,10 @@ use chrono::{NaiveDateTime, TimeZone, Utc};
 use lazy_static::lazy_static;
 use serenity::all::{
     AutoArchiveDuration, ChannelId, Context, CreateActionRow, CreateForumPost, CreateInputText,
-    CreateMessage, CreateModal, InputTextStyle, Mentionable, MessageId, ModalInteraction,
+    CreateMessage, CreateModal, InputTextStyle, Mentionable, ModalInteraction,
 };
 use zayden_core::parse_modal_data;
 
-use crate::lfg_post_manager::LfgPostData;
 use crate::slash_command::ACTIVITY_MAP;
 use crate::{create_lfg_embed, create_main_row, LfgPostManager, Result};
 
@@ -101,7 +100,11 @@ pub fn create_modal(activity: &str, locale: &str) -> CreateModal {
 pub struct LfgCreateModal;
 
 impl LfgCreateModal {
-    pub async fn run(ctx: &Context, interaction: &ModalInteraction) -> Result<()> {
+    pub async fn run<Db, Manager>(ctx: &Context, interaction: &ModalInteraction) -> Result<()>
+    where
+        Db: sqlx::Database,
+        Manager: LfgPostManager<Db>,
+    {
         let mut inputs = parse_modal_data(&interaction.data.components);
 
         let activity = inputs
@@ -141,7 +144,7 @@ impl LfgCreateModal {
             activity,
             timestamp,
             description,
-            &[interaction.user.id].into_iter().collect(),
+            &[interaction.user.id],
             fireteam_size,
             &interaction.user.name,
         );
@@ -168,21 +171,15 @@ impl LfgCreateModal {
             )
             .await?;
 
-        let mut data = ctx.data.write().await;
-        let manager = data
-            .get_mut::<LfgPostManager>()
-            .expect("Expected LfgPostManager in TypeMap");
-
-        manager.insert(
-            MessageId::new(channel.id.get()),
-            LfgPostData::new(
-                interaction.user.id,
-                activity,
-                start_time,
-                description,
-                fireteam_size,
-            ),
-        );
+        Manager::create(
+            channel.id.get(),
+            interaction.user.id,
+            activity,
+            start_time,
+            description,
+            fireteam_size,
+        )
+        .await?;
 
         Ok(())
     }

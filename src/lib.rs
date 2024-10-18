@@ -4,8 +4,6 @@ mod lfg_post_manager;
 mod modal;
 mod slash_command;
 
-use std::collections::HashSet;
-
 pub use components::{ActivityComponent, PostComponents};
 pub use error::Error;
 use error::Result;
@@ -20,7 +18,7 @@ fn create_lfg_embed(
     activity: &str,
     timestamp: i64,
     description: &str,
-    fireteam: &HashSet<UserId>,
+    fireteam: &[UserId],
     fireteam_size: u8,
     owner_name: &str,
 ) -> CreateEmbed {
