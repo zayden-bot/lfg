@@ -1,8 +1,9 @@
-use chrono::{DateTime, FixedOffset};
+use chrono::{DateTime, FixedOffset, TimeZone};
 use serenity::all::{Context, MessageId, User, UserId};
 use serenity::async_trait;
 use sqlx::any::AnyQueryResult;
 use sqlx::prelude::FromRow;
+use sqlx::types::time::{OffsetDateTime, UtcOffset};
 use sqlx::Pool;
 
 #[async_trait]
@@ -15,7 +16,7 @@ pub trait LfgPostManager<Db: sqlx::Database> {
         id: impl Into<i64> + Send,
         owner: impl Into<i64> + Send,
         activity: &str,
-        start_time: DateTime<FixedOffset>,
+        start_time: OffsetDateTime,
         description: &str,
         fireteam_size: impl Into<i16> + Send,
         fireteam: &[i64],
@@ -28,7 +29,7 @@ pub struct LfgPostRow {
     pub id: i64,
     pub owner_id: i64,
     pub activity: String,
-    pub start_time: DateTime<FixedOffset>,
+    pub start_time: OffsetDateTime,
     pub description: String,
     pub fireteam_size: i16,
     pub fireteam: Vec<i64>,
@@ -45,6 +46,14 @@ impl LfgPostRow {
         fireteam_size: impl Into<u8>,
     ) -> Self {
         let owner_id = owner_id.into().get() as i64;
+
+        let start_time = {
+            let fixed_offset = start_time.offset().utc_minus_local();
+            let utc_offset = UtcOffset::from_whole_seconds(fixed_offset).expect("Should be valid");
+            OffsetDateTime::from_unix_timestamp(start_time.timestamp())
+                .expect("Should be valid")
+                .to_offset(utc_offset)
+        };
 
         Self {
             id: (id.into().get() as i64),
@@ -67,8 +76,21 @@ impl LfgPostRow {
         owner_id.to_user(ctx).await
     }
 
+    pub fn start_time(&self) -> DateTime<FixedOffset> {
+        let naive_dt = DateTime::from_timestamp(
+            self.start_time.unix_timestamp(),
+            self.start_time.nanosecond(),
+        )
+        .expect("Should be a valid timestamp");
+
+        let utc_offset = self.start_time.offset().whole_seconds();
+        let fixed_offset = FixedOffset::east_opt(utc_offset).expect("Should be a valid UTC offset");
+
+        fixed_offset.from_utc_datetime(&naive_dt.naive_utc())
+    }
+
     pub fn timestamp(&self) -> i64 {
-        self.start_time.timestamp()
+        self.start_time.unix_timestamp()
     }
 
     pub fn fireteam(&self) -> Vec<UserId> {
