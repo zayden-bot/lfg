@@ -10,7 +10,11 @@ chrono = { version = "*", default-features = false, features = [
 ] }
 chrono-tz = { version = "*", default-features = false }
 lazy_static = { version = "*", default-features = false }
-sqlx = { version = "*", default-features = false, features = ["any", "macros"] }
+sqlx = { version = "*", default-features = false, features = [
+    "any",
+    "macros",
+    "time",
+] }
 zayden-core = { git = "https://github.com/zayden-bot/slash-command-core.git", branch = "master" }
 
 [dependencies.serenity]
