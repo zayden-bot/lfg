@@ -58,6 +58,10 @@ impl LfgPostRow {
         }
     }
 
+    pub fn owner_id(&self) -> UserId {
+        UserId::new(self.owner_id as u64)
+    }
+
     pub async fn owner(&self, ctx: &Context) -> serenity::Result<User> {
         let owner_id = UserId::new(self.owner_id as u64);
         owner_id.to_user(ctx).await
