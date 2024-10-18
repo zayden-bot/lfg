@@ -22,7 +22,7 @@ impl SettingsComponents {
 
         let modal = create_edit_modal(
             &post.activity,
-            post.start_time,
+            post.start_time(),
             post.fireteam_size(),
             &post.description,
         );
