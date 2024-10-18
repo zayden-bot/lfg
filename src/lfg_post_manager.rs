@@ -31,7 +31,7 @@ pub struct LfgPostRow {
     pub start_time: DateTime<FixedOffset>,
     pub description: String,
     pub fireteam_size: i16,
-    pub fireteam_ids: Vec<i64>,
+    pub fireteam: Vec<i64>,
     pub alternatives: Vec<i64>,
 }
 
@@ -53,7 +53,7 @@ impl LfgPostRow {
             start_time: start_time.fixed_offset(),
             description: description.into(),
             fireteam_size: (fireteam_size.into() as i16),
-            fireteam_ids: vec![owner_id],
+            fireteam: vec![owner_id],
             alternatives: Vec::new(),
         }
     }
@@ -72,7 +72,7 @@ impl LfgPostRow {
     }
 
     pub fn fireteam(&self) -> Vec<UserId> {
-        self.fireteam_ids
+        self.fireteam
             .iter()
             .map(|id| UserId::new((*id) as u64))
             .collect()
@@ -90,12 +90,12 @@ impl LfgPostRow {
     }
 
     pub fn is_full(&self) -> bool {
-        self.fireteam_ids.len() as i16 == self.fireteam_size
+        self.fireteam.len() as i16 == self.fireteam_size
     }
 
     pub fn join(&mut self, user: impl Into<UserId>) {
         let id = user.into().get() as i64;
-        self.fireteam_ids.push(id);
+        self.fireteam.push(id);
     }
 
     pub fn join_alt(&mut self, id: impl Into<UserId>) {
@@ -107,7 +107,7 @@ impl LfgPostRow {
     pub fn leave(&mut self, user: impl Into<UserId>) {
         let user = user.into().get() as i64;
 
-        self.fireteam_ids.retain(|&id| id != user);
+        self.fireteam.retain(|&id| id != user);
         self.alternatives.retain(|&id| id != user);
     }
 
@@ -123,7 +123,7 @@ impl LfgPostRow {
             self.start_time,
             &self.description,
             self.fireteam_size,
-            &self.fireteam_ids,
+            &self.fireteam,
         )
         .await
     }
