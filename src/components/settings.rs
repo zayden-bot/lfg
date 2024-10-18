@@ -20,12 +20,16 @@ impl Settings {
     {
         let post = Manager::get(pool, interaction.message.id).await?;
 
-        create_modal(
+        let modal = create_edit_modal(
             &post.activity,
             post.start_time,
             post.fireteam_size(),
             &post.description,
         );
+
+        interaction
+            .create_response(ctx, serenity::all::CreateInteractionResponse::Modal(modal))
+            .await?;
 
         Ok(())
     }
@@ -67,7 +71,7 @@ impl Settings {
     }
 }
 
-pub fn create_modal(
+fn create_edit_modal(
     activity: &str,
     start_time: DateTime<FixedOffset>,
     fireteam_size: u8,
@@ -81,7 +85,7 @@ pub fn create_modal(
             CreateInputText::new(
                 InputTextStyle::Short,
                 format!("Start Time ({})", start_time.format("%Z")),
-                format!("start time:{}", start_time.offset()),
+                "start time",
             )
             .value(format!("{}", start_time.format("%Y-%m-%d %H:%M"))),
         ),
@@ -96,5 +100,5 @@ pub fn create_modal(
         ),
     ];
 
-    CreateModal::new("lfg_create", "Create Event").components(row)
+    CreateModal::new("lfg_edit", "Edit Event").components(row)
 }
