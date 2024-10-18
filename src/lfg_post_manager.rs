@@ -41,7 +41,7 @@ impl LfgPostRow {
         id: impl Into<MessageId>,
         owner_id: impl Into<UserId>,
         activity: impl Into<String>,
-        start_time: DateTime<Tz>,
+        start_time: DateTime<FixedOffset>,
         description: impl Into<String>,
         fireteam_size: impl Into<u8>,
     ) -> Self {
@@ -51,7 +51,7 @@ impl LfgPostRow {
             id: (id.into().get() as i64),
             owner_id,
             activity: activity.into(),
-            start_time: start_time.fixed_offset(),
+            start_time,
             description: description.into(),
             fireteam_size: (fireteam_size.into() as i16),
             fireteam: vec![owner_id],

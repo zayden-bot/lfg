@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use chrono::{NaiveDateTime, Offset, TimeZone, Utc};
+use chrono::{FixedOffset, NaiveDateTime, Offset, TimeZone, Utc};
 use lazy_static::lazy_static;
 use serenity::all::{
     AutoArchiveDuration, ChannelId, Context, CreateActionRow, CreateForumPost, CreateInputText,
@@ -128,20 +128,24 @@ impl LfgCreateModal {
             .find(|(key, _)| key.starts_with("start time:"))
             .expect("Start time should exist as it's required");
 
-        let timezone = {
+        let offset_sec = {
             let start = start_time_id
                 .find(':')
                 .expect("Start time label should have a timezone");
 
-            println!("start_time_id: {:?}", &start_time_id[(start + 1)..]);
-            &start_time_id[(start + 1)..]
-        }
-        .parse::<chrono_tz::Tz>()?;
+            start_time_id[(start + 1)..].parse::<i32>()?
+        };
 
         let start_time = {
-            let native_time =
-                NaiveDateTime::parse_from_str(start_time_value, "%Y-%m-%d %H:%M").unwrap();
-            timezone.from_local_datetime(&native_time).single().unwrap()
+            let offset =
+                FixedOffset::east_opt(offset_sec).expect("Timezone offset should be valid");
+
+            let naive_time = NaiveDateTime::parse_from_str(start_time_value, "%Y-%m-%d %H:%M")?;
+
+            offset
+                .from_local_datetime(&naive_time)
+                .single()
+                .expect("Time should be valid")
         };
 
         let mut post = LfgPostRow::new(
