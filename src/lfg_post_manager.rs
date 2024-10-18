@@ -1,5 +1,4 @@
 use chrono::{DateTime, FixedOffset};
-use chrono_tz::Tz;
 use serenity::all::{Context, MessageId, User, UserId};
 use serenity::async_trait;
 use sqlx::any::AnyQueryResult;
