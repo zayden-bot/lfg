@@ -1,26 +1,40 @@
-use chrono::DateTime;
+use chrono::{DateTime, FixedOffset};
 use chrono_tz::Tz;
-use serenity::all::{MessageId, UserId};
+use serenity::all::{Context, MessageId, User, UserId};
 use serenity::async_trait;
 use sqlx::any::AnyQueryResult;
 use sqlx::prelude::FromRow;
+use sqlx::Pool;
 
 #[async_trait]
 pub trait LfgPostManager<Db: sqlx::Database> {
-    async fn get(pool: &sqlx::Pool<Db>, id: impl Into<MessageId>) -> sqlx::Result<LfgPostRow>;
+    async fn get(
+        pool: &sqlx::Pool<Db>,
+        id: impl Into<MessageId> + Send,
+    ) -> sqlx::Result<LfgPostRow>;
 
-    async fn save(pool: &sqlx::Pool<Db>, post: LfgPostRow) -> sqlx::Result<AnyQueryResult>;
+    #[allow(clippy::too_many_arguments)]
+    async fn save(
+        pool: &Pool<Db>,
+        id: impl Into<i64>,
+        owner: impl Into<i64>,
+        activity: &str,
+        start_time: DateTime<FixedOffset>,
+        description: &str,
+        fireteam_size: impl Into<i16>,
+        fireteam_ids: &[i64],
+    ) -> sqlx::Result<AnyQueryResult>;
 }
 
 #[derive(FromRow)]
 pub struct LfgPostRow {
-    pub id: MessageId,
-    pub owner: UserId,
-    pub activity: String,
-    pub start_time: DateTime<Tz>,
-    pub description: String,
-    pub fireteam_size: u8,
-    pub fireteam: Vec<UserId>,
+    id: i64,
+    owner_id: i64,
+    activity: String,
+    start_time: DateTime<FixedOffset>,
+    description: String,
+    fireteam_size: i16,
+    fireteam_ids: Vec<i64>,
 }
 
 impl LfgPostRow {
@@ -32,30 +46,76 @@ impl LfgPostRow {
         description: impl Into<String>,
         fireteam_size: impl Into<u8>,
     ) -> Self {
-        let owner_id = owner_id.into();
+        let owner_id = owner_id.into().get() as i64;
 
         Self {
-            id: id.into(),
-            owner: owner_id,
+            id: (id.into().get() as i64),
+            owner_id,
             activity: activity.into(),
-            start_time,
+            start_time: start_time.fixed_offset(),
             description: description.into(),
-            fireteam_size: fireteam_size.into(),
-            fireteam: vec![owner_id],
+            fireteam_size: (fireteam_size.into() as i16),
+            fireteam_ids: vec![owner_id],
         }
     }
 
+    pub async fn owner(&self, ctx: &Context) -> serenity::Result<User> {
+        let owner_id = UserId::new(self.owner_id as u64);
+        owner_id.to_user(ctx).await
+    }
+
+    pub fn activity(&self) -> &str {
+        &self.activity
+    }
+
+    pub fn timestamp(&self) -> i64 {
+        self.start_time.timestamp()
+    }
+
+    pub fn description(&self) -> &str {
+        &self.description
+    }
+
+    pub fn fireteam(&self) -> Vec<UserId> {
+        self.fireteam_ids
+            .iter()
+            .map(|id| UserId::new((*id) as u64))
+            .collect()
+    }
+
+    pub fn fireteam_size(&self) -> u8 {
+        self.fireteam_size as u8
+    }
+
     pub fn is_full(&self) -> bool {
-        self.fireteam.len() as u8 == self.fireteam_size
+        self.fireteam_ids.len() as i16 == self.fireteam_size
     }
 
     pub fn join(&mut self, user: impl Into<UserId>) {
-        self.fireteam.push(user.into());
+        let id = user.into().get() as i64;
+        self.fireteam_ids.push(id);
     }
 
     pub fn leave(&mut self, user: impl Into<UserId>) {
-        let user = user.into();
+        let user = user.into().get() as i64;
 
-        self.fireteam.retain(|&id| id != user);
+        self.fireteam_ids.retain(|&id| id != user);
+    }
+
+    pub async fn save<Db: sqlx::Database, Manager: LfgPostManager<Db>>(
+        self,
+        pool: &Pool<Db>,
+    ) -> sqlx::Result<AnyQueryResult> {
+        Manager::save(
+            pool,
+            self.id,
+            self.owner_id,
+            &self.activity,
+            self.start_time,
+            &self.description,
+            self.fireteam_size,
+            &self.fireteam_ids,
+        )
+        .await
     }
 }

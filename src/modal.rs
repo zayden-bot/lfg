@@ -185,7 +185,7 @@ impl LfgCreateModal {
             fireteam_size,
         );
 
-        Manager::save(pool, row).await?;
+        row.save::<Db, Manager>(pool).await?;
 
         Ok(())
     }

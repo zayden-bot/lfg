@@ -26,15 +26,15 @@ impl PostComponents {
         post.join(interaction.user.id);
 
         let embed = create_lfg_embed(
-            &post.activity,
-            post.start_time.timestamp(),
-            &post.description,
-            &post.fireteam,
-            post.fireteam_size,
-            &post.owner.to_user(ctx).await?.name,
+            post.activity(),
+            post.timestamp(),
+            post.description(),
+            &post.fireteam(),
+            post.fireteam_size(),
+            &post.owner(ctx).await?.name,
         );
 
-        Manager::save(pool, post).await?;
+        post.save::<Db, Manager>(pool).await?;
 
         interaction
             .create_response(
@@ -62,15 +62,15 @@ impl PostComponents {
         post.leave(interaction.user.id);
 
         let embed = create_lfg_embed(
-            &post.activity,
-            post.start_time.timestamp(),
-            &post.description,
-            &post.fireteam,
-            post.fireteam_size,
-            &post.owner.to_user(ctx).await?.name,
+            post.activity(),
+            post.timestamp(),
+            post.description(),
+            &post.fireteam(),
+            post.fireteam_size(),
+            &post.owner(ctx).await?.name,
         );
 
-        Manager::save(pool, post).await?;
+        post.save::<Db, Manager>(pool).await?;
 
         interaction
             .create_response(
