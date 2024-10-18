@@ -45,7 +45,7 @@ fn create_lfg_embed(post: &LfgPostRow, owner_name: &str) -> CreateEmbed {
             .collect::<Vec<_>>()
             .join("\n");
 
-        embed = embed.field("Alternatives", alternatives_str, false);
+        embed = embed.field("Alternatives", alternatives_str, true);
     }
 
     embed
