@@ -144,7 +144,7 @@ impl LfgCreateModal {
         };
 
         let mut post = LfgPostRow::new(
-            0,
+            1,
             interaction.user.id,
             activity,
             start_time,
