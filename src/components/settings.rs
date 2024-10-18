@@ -77,6 +77,8 @@ fn create_edit_modal(
     fireteam_size: u8,
     description: &str,
 ) -> CreateModal {
+    println!("{:?}", start_time);
+
     let row = vec![
         CreateActionRow::InputText(
             CreateInputText::new(InputTextStyle::Short, "Activity", "activity").value(activity),
