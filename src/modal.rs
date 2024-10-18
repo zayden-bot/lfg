@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use chrono::{NaiveDateTime, TimeZone, Utc};
+use chrono::{NaiveDateTime, Offset, TimeZone, Utc};
 use lazy_static::lazy_static;
 use serenity::all::{
     AutoArchiveDuration, ChannelId, Context, CreateActionRow, CreateForumPost, CreateInputText,
@@ -69,7 +69,7 @@ pub fn create_modal(activity: &str, locale: &str) -> CreateModal {
     };
 
     let timezone = LOCALE_TO_TIMEZONE.get(locale).unwrap_or(&chrono_tz::UTC);
-    let now_timezone = timezone.from_utc_datetime(&Utc::now().naive_utc());
+    let now = timezone.from_utc_datetime(&Utc::now().naive_utc());
 
     let row = vec![
         CreateActionRow::InputText(
@@ -78,10 +78,10 @@ pub fn create_modal(activity: &str, locale: &str) -> CreateModal {
         CreateActionRow::InputText(
             CreateInputText::new(
                 InputTextStyle::Short,
-                format!("Start Time ({})", now_timezone.format("%Z")),
-                format!("start time:{}", now_timezone.offset()),
+                format!("Start Time ({})", now.format("%Z")),
+                format!("start time:{}", now.offset().fix().local_minus_utc()),
             )
-            .value(format!("{}", now_timezone.format("%Y-%m-%d %H:%M"))),
+            .value(format!("{}", now.format("%Y-%m-%d %H:%M"))),
         ),
         CreateActionRow::InputText(
             CreateInputText::new(InputTextStyle::Short, "Fireteam Size", "fireteam size")
