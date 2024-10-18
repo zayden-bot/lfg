@@ -70,7 +70,6 @@ pub fn create_modal(activity: &str, locale: &str) -> CreateModal {
 
     let timezone = LOCALE_TO_TIMEZONE.get(locale).unwrap_or(&chrono_tz::UTC);
     let now_timezone = timezone.from_utc_datetime(&Utc::now().naive_utc());
-    let tz_abbr = now_timezone.format("%Z").to_string();
 
     let row = vec![
         CreateActionRow::InputText(
@@ -79,8 +78,8 @@ pub fn create_modal(activity: &str, locale: &str) -> CreateModal {
         CreateActionRow::InputText(
             CreateInputText::new(
                 InputTextStyle::Short,
-                format!("Start Time ({})", tz_abbr),
-                format!("start time:{}", timezone),
+                format!("Start Time ({})", now_timezone.format("%Z")),
+                format!("start time:{}", now_timezone.offset()),
             )
             .value(format!("{}", now_timezone.format("%Y-%m-%d %H:%M"))),
         ),
@@ -133,6 +132,8 @@ impl LfgCreateModal {
             let start = start_time_id
                 .find(':')
                 .expect("Start time label should have a timezone");
+
+            println!("start_time_id: {:?}", &start_time_id[(start + 1)..]);
             &start_time_id[(start + 1)..]
         }
         .parse::<chrono_tz::Tz>()?;
