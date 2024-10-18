@@ -1,3 +1,4 @@
+use serenity::all::{Mentionable, UserId};
 use zayden_core::ErrorResponse;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
@@ -6,6 +7,7 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     FireteamFull,
     PostNotFound,
+    PermissionDenied { owner: UserId },
 
     ParseInt(std::num::ParseIntError),
     Serenity(serenity::Error),
@@ -19,6 +21,10 @@ impl ErrorResponse for Error {
             Self::FireteamFull => String::from("Unable to join. Fireteam is full"),
             Self::PostNotFound => String::from(
                 "Post not found, please message <@211486447369322506> if the issue persists",
+            ),
+            Self::PermissionDenied { owner } => format!(
+                "Permission denied. Only the owner ({}) can modify this post",
+                owner.mention()
             ),
             _ => String::new(),
         }
