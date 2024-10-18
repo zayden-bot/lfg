@@ -6,9 +6,9 @@ use sqlx::Pool;
 
 use crate::{LfgPostManager, Result};
 
-pub struct Settings;
+pub struct SettingsComponents;
 
-impl Settings {
+impl SettingsComponents {
     pub async fn edit<Db, Manager>(
         ctx: &Context,
         interaction: &ComponentInteraction,

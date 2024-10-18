@@ -4,4 +4,4 @@ mod settings;
 
 pub use activity::ActivityComponent;
 pub use lfg_post::PostComponents;
-pub use settings::Settings;
+pub use settings::SettingsComponents;
