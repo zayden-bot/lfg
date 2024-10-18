@@ -96,12 +96,15 @@ impl LfgPostRow {
 
     pub fn join(&mut self, user: impl Into<UserId>) {
         let id = user.into().get() as i64;
+
+        self.leave(id as u64);
         self.fireteam.push(id);
     }
 
     pub fn join_alt(&mut self, id: impl Into<UserId>) {
         let id = id.into().get() as i64;
 
+        self.leave(id as u64);
         self.alternatives.push(id);
     }
 
