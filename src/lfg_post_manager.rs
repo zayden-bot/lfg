@@ -8,20 +8,17 @@ use sqlx::Pool;
 
 #[async_trait]
 pub trait LfgPostManager<Db: sqlx::Database> {
-    async fn get(
-        pool: &sqlx::Pool<Db>,
-        id: impl Into<MessageId> + Send,
-    ) -> sqlx::Result<LfgPostRow>;
+    async fn get(pool: &Pool<Db>, id: impl Into<MessageId> + Send) -> sqlx::Result<LfgPostRow>;
 
     #[allow(clippy::too_many_arguments)]
     async fn save(
         pool: &Pool<Db>,
-        id: impl Into<i64>,
-        owner: impl Into<i64>,
+        id: impl Into<i64> + Send,
+        owner: impl Into<i64> + Send,
         activity: &str,
         start_time: DateTime<FixedOffset>,
         description: &str,
-        fireteam_size: impl Into<i16>,
+        fireteam_size: impl Into<i16> + Send,
         fireteam_ids: &[i64],
     ) -> sqlx::Result<AnyQueryResult>;
 }
