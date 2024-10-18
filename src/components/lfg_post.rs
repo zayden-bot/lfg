@@ -25,14 +25,7 @@ impl PostComponents {
 
         post.join(interaction.user.id);
 
-        let embed = create_lfg_embed(
-            &post.activity,
-            post.timestamp(),
-            &post.description,
-            &post.fireteam(),
-            post.fireteam_size(),
-            &post.owner(ctx).await?.name,
-        );
+        let embed = create_lfg_embed(&post, &post.owner(ctx).await?.name);
 
         post.save::<Db, Manager>(pool).await?;
 
@@ -61,14 +54,7 @@ impl PostComponents {
 
         post.leave(interaction.user.id);
 
-        let embed = create_lfg_embed(
-            &post.activity,
-            post.timestamp(),
-            &post.description,
-            &post.fireteam(),
-            post.fireteam_size(),
-            &post.owner(ctx).await?.name,
-        );
+        let embed = create_lfg_embed(&post, &post.owner(ctx).await?.name);
 
         post.save::<Db, Manager>(pool).await?;
 
@@ -84,7 +70,32 @@ impl PostComponents {
         Ok(())
     }
 
-    pub async fn alternative(_ctx: &Context, _interaction: &ComponentInteraction) {
-        todo!()
+    pub async fn alternative<Db, Manager>(
+        ctx: &Context,
+        interaction: &ComponentInteraction,
+        pool: &Pool<Db>,
+    ) -> Result<()>
+    where
+        Db: sqlx::Database,
+        Manager: LfgPostManager<Db>,
+    {
+        let mut post = Manager::get(pool, interaction.message.id).await?;
+
+        post.join_alt(interaction.user.id);
+
+        let embed = create_lfg_embed(&post, &post.owner(ctx).await?.name);
+
+        post.save::<Db, Manager>(pool).await?;
+
+        interaction
+            .create_response(
+                ctx,
+                CreateInteractionResponse::UpdateMessage(
+                    CreateInteractionResponseMessage::new().embed(embed),
+                ),
+            )
+            .await?;
+
+        Ok(())
     }
 }

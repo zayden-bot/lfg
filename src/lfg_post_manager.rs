@@ -32,6 +32,7 @@ pub struct LfgPostRow {
     pub description: String,
     pub fireteam_size: i16,
     pub fireteam_ids: Vec<i64>,
+    pub alternatives: Vec<i64>,
 }
 
 impl LfgPostRow {
@@ -53,6 +54,7 @@ impl LfgPostRow {
             description: description.into(),
             fireteam_size: (fireteam_size.into() as i16),
             fireteam_ids: vec![owner_id],
+            alternatives: Vec::new(),
         }
     }
 
@@ -76,6 +78,13 @@ impl LfgPostRow {
         self.fireteam_size as u8
     }
 
+    pub fn alternatives(&self) -> Vec<UserId> {
+        self.alternatives
+            .iter()
+            .map(|id| UserId::new((*id) as u64))
+            .collect()
+    }
+
     pub fn is_full(&self) -> bool {
         self.fireteam_ids.len() as i16 == self.fireteam_size
     }
@@ -85,10 +94,17 @@ impl LfgPostRow {
         self.fireteam_ids.push(id);
     }
 
+    pub fn join_alt(&mut self, id: impl Into<UserId>) {
+        let id = id.into().get() as i64;
+
+        self.alternatives.push(id);
+    }
+
     pub fn leave(&mut self, user: impl Into<UserId>) {
         let user = user.into().get() as i64;
 
         self.fireteam_ids.retain(|&id| id != user);
+        self.alternatives.retain(|&id| id != user);
     }
 
     pub async fn save<Db: sqlx::Database, Manager: LfgPostManager<Db>>(

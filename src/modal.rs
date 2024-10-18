@@ -143,16 +143,16 @@ impl LfgCreateModal {
             timezone.from_local_datetime(&native_time).single().unwrap()
         };
 
-        let timestamp = start_time.timestamp();
-
-        let embed = create_lfg_embed(
+        let mut post = LfgPostRow::new(
+            0,
+            interaction.user.id,
             activity,
-            timestamp,
+            start_time,
             description,
-            &[interaction.user.id],
             fireteam_size,
-            &interaction.user.name,
         );
+
+        let embed = create_lfg_embed(&post, &interaction.user.name);
 
         let row = create_main_row();
 
@@ -176,16 +176,9 @@ impl LfgCreateModal {
             )
             .await?;
 
-        let row = LfgPostRow::new(
-            channel.id.get(),
-            interaction.user.id,
-            activity,
-            start_time,
-            description,
-            fireteam_size,
-        );
+        post.id = channel.id.get() as i64;
 
-        row.save::<Db, Manager>(pool).await?;
+        post.save::<Db, Manager>(pool).await?;
 
         Ok(())
     }
