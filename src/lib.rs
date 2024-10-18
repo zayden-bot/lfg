@@ -8,6 +8,7 @@ pub use components::{ActivityComponent, PostComponents};
 pub use error::Error;
 use error::Result;
 pub use lfg_post_manager::LfgPostManager;
+pub use lfg_post_manager::LfgPostRow;
 pub use modal::LfgCreateModal;
 use serenity::all::{
     ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, Mentionable, UserId,

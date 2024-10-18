@@ -10,7 +10,7 @@ use sqlx::Pool;
 use zayden_core::parse_modal_data;
 
 use crate::slash_command::ACTIVITY_MAP;
-use crate::{create_lfg_embed, create_main_row, LfgPostManager, Result};
+use crate::{create_lfg_embed, create_main_row, LfgPostManager, LfgPostRow, Result};
 
 const LFG_CHANNEL: ChannelId = ChannelId::new(1091736203029659728);
 
@@ -176,16 +176,16 @@ impl LfgCreateModal {
             )
             .await?;
 
-        Manager::create(
-            pool,
+        let row = LfgPostRow::new(
             channel.id.get(),
             interaction.user.id,
             activity,
             start_time,
             description,
             fireteam_size,
-        )
-        .await?;
+        );
+
+        Manager::save(pool, row).await?;
 
         Ok(())
     }
