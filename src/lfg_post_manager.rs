@@ -19,7 +19,8 @@ pub trait LfgPostManager<Db: sqlx::Database> {
         start_time: DateTime<FixedOffset>,
         description: &str,
         fireteam_size: impl Into<i16> + Send,
-        fireteam_ids: &[i64],
+        fireteam: &[i64],
+        alternatives: &[i64],
     ) -> sqlx::Result<AnyQueryResult>;
 }
 
@@ -124,6 +125,7 @@ impl LfgPostRow {
             &self.description,
             self.fireteam_size,
             &self.fireteam,
+            &self.alternatives,
         )
         .await
     }
