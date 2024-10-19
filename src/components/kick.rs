@@ -21,9 +21,7 @@ impl KickComponent {
             _ => unreachable!("User is required"),
         };
 
-        println!("{:?}", interaction);
-
-        let mut post = Manager::get(pool, interaction.message.id).await?;
+        let mut post = Manager::get(pool, interaction.channel_id.get()).await?;
 
         if post.kick(user) {
             post.save::<Db, Manager>(pool).await?;
