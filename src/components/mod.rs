@@ -1,4 +1,5 @@
 mod activity;
+mod kick;
 mod lfg_post;
 mod settings;
 
