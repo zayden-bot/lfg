@@ -21,6 +21,8 @@ impl KickComponent {
             _ => unreachable!("User is required"),
         };
 
+        println!("{:?}", interaction);
+
         let mut post = Manager::get(pool, interaction.message.id).await?;
 
         if post.kick(user) {
