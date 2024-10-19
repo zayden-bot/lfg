@@ -67,6 +67,10 @@ impl SettingsComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
+        Manager::delete(pool, interaction.message.id).await?;
+
+        interaction.channel_id.delete(ctx).await?;
+
         Ok(())
     }
 }

@@ -22,6 +22,11 @@ pub trait LfgPostManager<Db: sqlx::Database> {
         fireteam: &[i64],
         alternatives: &[i64],
     ) -> sqlx::Result<AnyQueryResult>;
+
+    async fn delete(
+        pool: &Pool<Db>,
+        id: impl Into<MessageId> + Send,
+    ) -> sqlx::Result<AnyQueryResult>;
 }
 
 #[derive(FromRow)]
