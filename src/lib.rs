@@ -1,7 +1,7 @@
 mod components;
 mod error;
 mod lfg_post_manager;
-mod modal;
+mod modals;
 mod slash_command;
 mod timezone_manager;
 
@@ -13,7 +13,7 @@ pub use components::{ActivityComponent, PostComponents, SettingsComponents};
 pub use error::Error;
 use error::Result;
 pub use lfg_post_manager::{LfgPostManager, LfgPostRow};
-pub use modal::LfgCreateModal;
+pub use modals::{LfgCreateModal, LfgEditModal};
 pub use slash_command::LfgCommand;
 pub use timezone_manager::TimezoneManager;
 

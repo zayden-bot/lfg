@@ -7,7 +7,7 @@ use serenity::all::{
 use std::collections::HashMap;
 use zayden_core::parse_options;
 
-use crate::modal::create_modal;
+use crate::modals::create;
 use crate::timezone_manager::TimezoneManager;
 use crate::Result;
 
@@ -103,10 +103,9 @@ impl LfgCommand {
         } else {
             interaction.delete_response(ctx).await?;
 
-            let timezone =
-                TimezoneManager::foo(ctx, interaction.user.id, &interaction.locale).await;
+            let timezone = TimezoneManager::get(&interaction.locale).await;
 
-            let modal = create_modal(activity, timezone);
+            let modal = create::create_modal(activity, timezone);
 
             interaction
                 .create_response(ctx, CreateInteractionResponse::Modal(modal))

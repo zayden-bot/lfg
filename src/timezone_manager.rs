@@ -2,10 +2,6 @@ use std::collections::HashMap;
 
 use chrono_tz::{America, Asia, Europe, Tz};
 use lazy_static::lazy_static;
-use serenity::{
-    all::{Context, UserId},
-    prelude::TypeMapKey,
-};
 
 lazy_static! {
     static ref LOCALE_TO_TIMEZONE: HashMap<&'static str, chrono_tz::Tz> = {
@@ -50,21 +46,7 @@ lazy_static! {
 pub struct TimezoneManager;
 
 impl TimezoneManager {
-    pub async fn foo<'a>(ctx: &'a Context, user_id: impl Into<UserId>, local: &'a str) -> &'a Tz {
-        let timezone = LOCALE_TO_TIMEZONE.get(local).unwrap_or(&chrono_tz::UTC);
-
-        {
-            let mut data = ctx.data.write().await;
-            let manager = data
-                .get_mut::<Self>()
-                .expect("TimeZoneManager is in the context");
-            manager.insert(user_id.into(), *timezone);
-        }
-
-        timezone
+    pub async fn get<'a>(local: &str) -> &'a Tz {
+        LOCALE_TO_TIMEZONE.get(local).unwrap_or(&chrono_tz::UTC)
     }
-}
-
-impl TypeMapKey for TimezoneManager {
-    type Value = HashMap<UserId, Tz>;
 }
