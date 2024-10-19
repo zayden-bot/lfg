@@ -77,7 +77,7 @@ impl SettingsComponents {
         let users = post
             .fireteam()
             .into_iter()
-            .filter(|id| *id != post.owner_id())
+            // .filter(|id| *id != post.owner_id())
             .collect();
 
         let select_menu = CreateSelectMenu::new(
