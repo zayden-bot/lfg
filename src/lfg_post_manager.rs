@@ -106,6 +106,12 @@ impl LfgPostRow {
         self.fireteam.len() as i16 == self.fireteam_size
     }
 
+    pub fn contains(&self, user: impl Into<UserId>) -> bool {
+        let user = user.into().get() as i64;
+
+        self.fireteam.contains(&user) || self.alternatives.contains(&user)
+    }
+
     pub fn join(&mut self, user: impl Into<UserId>) {
         let id = user.into().get() as i64;
 
@@ -125,6 +131,15 @@ impl LfgPostRow {
 
         self.fireteam.retain(|&id| id != user);
         self.alternatives.retain(|&id| id != user);
+    }
+
+    pub fn kick(&mut self, user: UserId) -> bool {
+        if !self.contains(user) {
+            return false;
+        }
+
+        self.leave(user);
+        true
     }
 
     pub async fn save<Db: sqlx::Database, Manager: LfgPostManager<Db>>(

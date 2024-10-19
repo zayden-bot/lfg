@@ -63,27 +63,11 @@ impl SettingsComponents {
 
         Ok(())
     }
-    pub async fn kick<Db, Manager>(
-        ctx: &Context,
-        interaction: &ComponentInteraction,
-        pool: &Pool<Db>,
-    ) -> Result<()>
-    where
-        Db: sqlx::Database,
-        Manager: LfgPostManager<Db>,
-    {
-        let post = Manager::get(pool, interaction.message.id).await?;
-
-        let users = post
-            .fireteam()
-            .into_iter()
-            // .filter(|id| *id != post.owner_id())
-            .collect();
-
+    pub async fn kick(ctx: &Context, interaction: &ComponentInteraction) -> Result<()> {
         let select_menu = CreateSelectMenu::new(
             "lfg_kick",
             CreateSelectMenuKind::User {
-                default_users: Some(users),
+                default_users: None,
             },
         );
 
@@ -93,7 +77,8 @@ impl SettingsComponents {
                 CreateInteractionResponse::Message(
                     CreateInteractionResponseMessage::new()
                         .content("Select the user you want to kick")
-                        .select_menu(select_menu),
+                        .select_menu(select_menu)
+                        .ephemeral(true),
                 ),
             )
             .await?;

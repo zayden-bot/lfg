@@ -9,7 +9,7 @@ use serenity::all::{
     ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, Mentionable,
 };
 
-pub use components::{ActivityComponent, PostComponents, SettingsComponents};
+pub use components::{ActivityComponent, KickComponent, PostComponents, SettingsComponents};
 pub use error::Error;
 use error::Result;
 pub use lfg_post_manager::{LfgPostManager, LfgPostRow};
