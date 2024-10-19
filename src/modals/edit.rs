@@ -3,9 +3,7 @@ use serenity::all::{Context, EditMessage, EditThread, ModalInteraction};
 use sqlx::Pool;
 use zayden_core::parse_modal_data;
 
-use crate::{
-    create_lfg_embed, create_main_row, LfgPostManager, LfgPostRow, Result, TimezoneManager,
-};
+use crate::{create_lfg_embed, LfgPostManager, LfgPostRow, Result, TimezoneManager};
 
 pub struct LfgEditModal;
 
@@ -59,8 +57,6 @@ impl LfgEditModal {
 
         let embed = create_lfg_embed(&post, &interaction.user.name);
 
-        let row = create_main_row();
-
         channel_id
             .edit_thread(
                 ctx,
@@ -73,11 +69,7 @@ impl LfgEditModal {
             .await?;
 
         channel_id
-            .edit_message(
-                ctx,
-                channel_id.get(),
-                EditMessage::new().embed(embed).components(vec![row]),
-            )
+            .edit_message(ctx, channel_id.get(), EditMessage::new().embed(embed))
             .await?;
 
         post.save::<Db, Manager>(pool).await?;

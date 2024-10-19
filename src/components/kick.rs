@@ -1,12 +1,13 @@
 use serenity::all::{
     ComponentInteraction, ComponentInteractionDataKind, Context, CreateInteractionResponse,
+    EditMessage,
 };
 use serenity::all::{CreateInteractionResponseMessage, Mentionable};
 use sqlx::Database;
 use sqlx::Pool;
 
-use crate::LfgPostManager;
 use crate::Result;
+use crate::{create_lfg_embed, LfgPostManager};
 
 pub struct KickComponent;
 
@@ -24,6 +25,13 @@ impl KickComponent {
         let mut post = Manager::get(pool, interaction.channel_id.get()).await?;
 
         if post.kick(user) {
+            let embed = create_lfg_embed(&post, &interaction.user.name);
+
+            let channel_id = post.channel_id();
+            channel_id
+                .edit_message(ctx, post.message_id(), EditMessage::new().embed(embed))
+                .await?;
+
             post.save::<Db, Manager>(pool).await?;
 
             interaction

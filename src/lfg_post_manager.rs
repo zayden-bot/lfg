@@ -1,5 +1,5 @@
 use chrono::{DateTime, NaiveDateTime, TimeZone};
-use serenity::all::{Context, MessageId, User, UserId};
+use serenity::all::{ChannelId, Context, MessageId, User, UserId};
 use serenity::async_trait;
 use sqlx::any::AnyQueryResult;
 use sqlx::prelude::FromRow;
@@ -64,6 +64,14 @@ impl LfgPostRow {
             fireteam: vec![owner_id],
             alternatives: Vec::new(),
         }
+    }
+
+    pub fn channel_id(&self) -> ChannelId {
+        ChannelId::new(self.id as u64)
+    }
+
+    pub fn message_id(&self) -> MessageId {
+        MessageId::new(self.id as u64)
     }
 
     pub fn owner_id(&self) -> UserId {
