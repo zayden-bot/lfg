@@ -65,7 +65,7 @@ impl SettingsComponents {
     }
     pub async fn kick(ctx: &Context, interaction: &ComponentInteraction) -> Result<()> {
         let select_menu = CreateSelectMenu::new(
-            "lfg_kick",
+            "lfg_kick_menu",
             CreateSelectMenuKind::User {
                 default_users: None,
             },
