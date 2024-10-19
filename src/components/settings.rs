@@ -1,10 +1,7 @@
-use chrono::DateTime;
-use chrono_tz::Tz;
-use serenity::all::{
-    ComponentInteraction, Context, CreateActionRow, CreateInputText, CreateModal, InputTextStyle,
-};
+use serenity::all::{ComponentInteraction, Context, CreateInteractionResponse, CreateModal};
 use sqlx::Pool;
 
+use crate::modals::modal_components;
 use crate::{LfgPostManager, Result};
 
 pub struct SettingsComponents;
@@ -21,15 +18,17 @@ impl SettingsComponents {
     {
         let post = Manager::get(pool, interaction.message.id).await?;
 
-        let modal = create_edit_modal(
+        let row = modal_components(
             &post.activity,
             post.start_time(),
             post.fireteam_size(),
-            &post.description,
+            Some(&post.description),
         );
 
+        let modal = CreateModal::new("lfg_create", "Create Event").components(row);
+
         interaction
-            .create_response(ctx, serenity::all::CreateInteractionResponse::Modal(modal))
+            .create_response(ctx, CreateInteractionResponse::Modal(modal))
             .await?;
 
         Ok(())
@@ -70,38 +69,4 @@ impl SettingsComponents {
     {
         Ok(())
     }
-}
-
-fn create_edit_modal(
-    activity: &str,
-    start_time: DateTime<Tz>,
-    fireteam_size: u8,
-    description: &str,
-) -> CreateModal {
-    println!("{:?}", start_time);
-
-    let row = vec![
-        CreateActionRow::InputText(
-            CreateInputText::new(InputTextStyle::Short, "Activity", "activity").value(activity),
-        ),
-        CreateActionRow::InputText(
-            CreateInputText::new(
-                InputTextStyle::Short,
-                format!("Start Time ({})", start_time.format("%Z")),
-                "start time",
-            )
-            .value(format!("{}", start_time.format("%Y-%m-%d %H:%M"))),
-        ),
-        CreateActionRow::InputText(
-            CreateInputText::new(InputTextStyle::Short, "Fireteam Size", "fireteam size")
-                .value(fireteam_size.to_string()),
-        ),
-        CreateActionRow::InputText(
-            CreateInputText::new(InputTextStyle::Paragraph, "Description", "description")
-                .value(description)
-                .required(false),
-        ),
-    ];
-
-    CreateModal::new("lfg_edit", "Edit Event").components(row)
 }
