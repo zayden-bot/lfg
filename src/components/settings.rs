@@ -1,4 +1,5 @@
-use chrono::{DateTime, FixedOffset};
+use chrono::DateTime;
+use chrono_tz::Tz;
 use serenity::all::{
     ComponentInteraction, Context, CreateActionRow, CreateInputText, CreateModal, InputTextStyle,
 };
@@ -73,7 +74,7 @@ impl SettingsComponents {
 
 fn create_edit_modal(
     activity: &str,
-    start_time: DateTime<FixedOffset>,
+    start_time: DateTime<Tz>,
     fireteam_size: u8,
     description: &str,
 ) -> CreateModal {

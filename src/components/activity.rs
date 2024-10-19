@@ -4,6 +4,7 @@ use serenity::all::{
 
 use crate::modal::create_modal;
 use crate::Result;
+use crate::TimezoneManager;
 
 pub struct ActivityComponent;
 
@@ -14,9 +15,9 @@ impl ActivityComponent {
             _ => unreachable!("Activity is required"),
         };
 
-        // interaction.locale;
+        let timezone = TimezoneManager::foo(ctx, interaction.user.id, &interaction.locale).await;
 
-        let modal = create_modal(activity, &interaction.locale);
+        let modal = create_modal(activity, timezone);
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Modal(modal))

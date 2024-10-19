@@ -3,17 +3,19 @@ mod error;
 mod lfg_post_manager;
 mod modal;
 mod slash_command;
+mod timezone_manager;
+
+use serenity::all::{
+    ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, Mentionable,
+};
 
 pub use components::{ActivityComponent, PostComponents, SettingsComponents};
 pub use error::Error;
 use error::Result;
-pub use lfg_post_manager::LfgPostManager;
-pub use lfg_post_manager::LfgPostRow;
+pub use lfg_post_manager::{LfgPostManager, LfgPostRow};
 pub use modal::LfgCreateModal;
-use serenity::all::{
-    ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, Mentionable,
-};
 pub use slash_command::LfgCommand;
+use timezone_manager::TimezoneManager;
 
 fn create_lfg_embed(post: &LfgPostRow, owner_name: &str) -> CreateEmbed {
     let timestamp = post.timestamp();

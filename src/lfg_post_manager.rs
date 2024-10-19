@@ -1,9 +1,8 @@
-use chrono::{DateTime, FixedOffset, TimeZone};
+use chrono::{DateTime, NaiveDateTime, TimeZone};
 use serenity::all::{Context, MessageId, User, UserId};
 use serenity::async_trait;
 use sqlx::any::AnyQueryResult;
 use sqlx::prelude::FromRow;
-use sqlx::types::time::{OffsetDateTime, UtcOffset};
 use sqlx::Pool;
 
 #[async_trait]
@@ -16,7 +15,8 @@ pub trait LfgPostManager<Db: sqlx::Database> {
         id: impl Into<i64> + Send,
         owner: impl Into<i64> + Send,
         activity: &str,
-        start_time: OffsetDateTime,
+        timestamp: NaiveDateTime,
+        timezone: &str,
         description: &str,
         fireteam_size: impl Into<i16> + Send,
         fireteam: &[i64],
@@ -29,7 +29,8 @@ pub struct LfgPostRow {
     pub id: i64,
     pub owner_id: i64,
     pub activity: String,
-    pub start_time: OffsetDateTime,
+    pub timestamp: NaiveDateTime,
+    pub timezone: String,
     pub description: String,
     pub fireteam_size: i16,
     pub fireteam: Vec<i64>,
@@ -41,25 +42,18 @@ impl LfgPostRow {
         id: impl Into<MessageId>,
         owner_id: impl Into<UserId>,
         activity: impl Into<String>,
-        start_time: DateTime<FixedOffset>,
+        start_time: DateTime<chrono_tz::Tz>,
         description: impl Into<String>,
         fireteam_size: impl Into<u8>,
     ) -> Self {
         let owner_id = owner_id.into().get() as i64;
 
-        let start_time = {
-            let fixed_offset = start_time.offset().utc_minus_local();
-            let utc_offset = UtcOffset::from_whole_seconds(fixed_offset).expect("Should be valid");
-            OffsetDateTime::from_unix_timestamp(start_time.timestamp())
-                .expect("Should be valid")
-                .to_offset(utc_offset)
-        };
-
         Self {
             id: (id.into().get() as i64),
             owner_id,
             activity: activity.into(),
-            start_time,
+            timestamp: start_time.naive_utc(),
+            timezone: start_time.timezone().name().to_string(),
             description: description.into(),
             fireteam_size: (fireteam_size.into() as i16),
             fireteam: vec![owner_id],
@@ -76,21 +70,13 @@ impl LfgPostRow {
         owner_id.to_user(ctx).await
     }
 
-    pub fn start_time(&self) -> DateTime<FixedOffset> {
-        let naive_dt = DateTime::from_timestamp(
-            self.start_time.unix_timestamp(),
-            self.start_time.nanosecond(),
-        )
-        .expect("Should be a valid timestamp");
-
-        let utc_offset = self.start_time.offset().whole_seconds();
-        let fixed_offset = FixedOffset::east_opt(utc_offset).expect("Should be a valid UTC offset");
-
-        fixed_offset.from_utc_datetime(&naive_dt.naive_utc())
+    pub fn start_time(&self) -> DateTime<chrono_tz::Tz> {
+        let timezone: chrono_tz::Tz = self.timezone.parse().expect("Should be a valid timezone");
+        timezone.from_utc_datetime(&self.timestamp)
     }
 
     pub fn timestamp(&self) -> i64 {
-        self.start_time.unix_timestamp()
+        self.timestamp.and_utc().timestamp()
     }
 
     pub fn fireteam(&self) -> Vec<UserId> {
@@ -145,7 +131,8 @@ impl LfgPostRow {
             self.id,
             self.owner_id,
             &self.activity,
-            self.start_time,
+            self.timestamp,
+            &self.timezone,
             &self.description,
             self.fireteam_size,
             &self.fireteam,

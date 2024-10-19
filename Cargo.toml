@@ -13,7 +13,7 @@ lazy_static = { version = "*", default-features = false }
 sqlx = { version = "*", default-features = false, features = [
     "any",
     "macros",
-    "time",
+    "chrono",
 ] }
 zayden-core = { git = "https://github.com/zayden-bot/slash-command-core.git", branch = "master" }
 
