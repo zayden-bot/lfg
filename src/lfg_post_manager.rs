@@ -160,4 +160,11 @@ impl LfgPostRow {
         )
         .await
     }
+
+    pub async fn delete<Db: sqlx::Database, Manager: LfgPostManager<Db>>(
+        self,
+        pool: &Pool<Db>,
+    ) -> sqlx::Result<AnyQueryResult> {
+        Manager::delete(pool, self.id as u64).await
+    }
 }

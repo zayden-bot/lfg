@@ -5,7 +5,7 @@ use serenity::all::{
 use sqlx::Pool;
 
 use crate::modals::modal_components;
-use crate::{LfgPostManager, Result};
+use crate::{Error, LfgPostManager, Result};
 
 pub struct SettingsComponents;
 
@@ -20,6 +20,12 @@ impl SettingsComponents {
         Manager: LfgPostManager<Db>,
     {
         let post = Manager::get(pool, interaction.message.id).await?;
+
+        if interaction.user.id != post.owner_id() {
+            return Err(Error::PermissionDenied {
+                owner: post.owner_id(),
+            });
+        }
 
         let row = modal_components(
             &post.activity,
@@ -48,6 +54,12 @@ impl SettingsComponents {
     {
         let post = Manager::get(pool, interaction.message.id).await?;
 
+        if interaction.user.id != post.owner_id() {
+            return Err(Error::PermissionDenied {
+                owner: post.owner_id(),
+            });
+        }
+
         let row = modal_components(
             &post.activity,
             post.start_time(),
@@ -63,7 +75,23 @@ impl SettingsComponents {
 
         Ok(())
     }
-    pub async fn kick(ctx: &Context, interaction: &ComponentInteraction) -> Result<()> {
+    pub async fn kick<Db, Manager>(
+        ctx: &Context,
+        interaction: &ComponentInteraction,
+        pool: &Pool<Db>,
+    ) -> Result<()>
+    where
+        Db: sqlx::Database,
+        Manager: LfgPostManager<Db>,
+    {
+        let post = Manager::get(pool, interaction.message.id).await?;
+
+        if interaction.user.id != post.owner_id() {
+            return Err(Error::PermissionDenied {
+                owner: post.owner_id(),
+            });
+        }
+
         let select_menu = CreateSelectMenu::new(
             "lfg_kick_menu",
             CreateSelectMenuKind::User {
@@ -95,7 +123,15 @@ impl SettingsComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        Manager::delete(pool, interaction.message.id).await?;
+        let post = Manager::get(pool, interaction.message.id).await?;
+
+        if interaction.user.id != post.owner_id() {
+            return Err(Error::PermissionDenied {
+                owner: post.owner_id(),
+            });
+        }
+
+        post.delete::<Db, Manager>(pool).await?;
 
         interaction.channel_id.delete(ctx).await?;
 
