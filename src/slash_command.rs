@@ -140,21 +140,6 @@ impl LfgCommand {
                     .add_string_choice("Other", "other"),
                 ),
             )
-            .add_option(
-                CreateCommandOption::new(
-                    CommandOptionType::SubCommand,
-                    "edit",
-                    "Edit an existing looking for group post",
-                )
-                .add_sub_option(
-                    CreateCommandOption::new(
-                        CommandOptionType::Channel,
-                        "channel",
-                        "The LFG post to edit",
-                    )
-                    .required(true),
-                ),
-            )
     }
 }
 // /event join
