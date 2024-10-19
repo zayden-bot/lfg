@@ -1,7 +1,7 @@
-use serenity::all::CreateInteractionResponseMessage;
 use serenity::all::{
     ComponentInteraction, ComponentInteractionDataKind, Context, CreateInteractionResponse,
 };
+use serenity::all::{CreateInteractionResponseMessage, Mentionable};
 use sqlx::Database;
 use sqlx::Pool;
 
@@ -35,7 +35,7 @@ impl KickComponent {
                     ctx,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content(format!("{} is not in the fireteam", user))
+                            .content(format!("{} is not in the fireteam", user.mention()))
                             .ephemeral(true),
                     ),
                 )
