@@ -19,12 +19,12 @@ pub enum Error {
 impl ErrorResponse for Error {
     fn to_response(&self) -> String {
         match self {
-            Self::FireteamFull => String::from("Unable to join. Fireteam is full"),
+            Self::FireteamFull => String::from("Unable to join. Fireteam is full."),
             Self::PostNotFound => String::from(
-                "Post not found, please message <@211486447369322506> if the issue persists",
+                "Post not found, please message <@211486447369322506> if the issue persists.",
             ),
             Self::PermissionDenied { owner } => format!(
-                "Permission denied. Only the owner ({}) can modify this post",
+                "Permission denied. Only the owner ({}) can use this action.",
                 owner.mention()
             ),
             _ => String::new(),
