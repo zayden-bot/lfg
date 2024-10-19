@@ -1,5 +1,5 @@
 use chrono::{NaiveDateTime, TimeZone};
-use serenity::all::{Context, ModalInteraction};
+use serenity::all::{Context, EditMessage, EditThread, ModalInteraction};
 use sqlx::Pool;
 use zayden_core::parse_modal_data;
 
@@ -46,8 +46,10 @@ impl LfgEditModal {
                 .expect("Invalid date time")
         };
 
-        let mut post = LfgPostRow::new(
-            1,
+        let channel_id = interaction.channel_id;
+
+        let post = LfgPostRow::new(
+            channel_id.get(),
             interaction.user.id,
             activity,
             start_time,
@@ -59,31 +61,26 @@ impl LfgEditModal {
 
         let row = create_main_row();
 
-        println!("{:?}", interaction);
+        channel_id
+            .edit_thread(
+                ctx,
+                EditThread::new().name(format!(
+                    "{} - {}",
+                    activity,
+                    start_time.format("%d %b %H:%M %Z")
+                )),
+            )
+            .await?;
 
-        // let channel = LFG_CHANNEL
-        //     .create_forum_post(
-        //         ctx,
-        //         CreateForumPost::new(
-        //             format!("{} - {}", activity, start_time.format("%d %b %H:%M %Z")),
-        //             CreateMessage::new().embed(embed).components(vec![row]),
-        //         )
-        //         .auto_archive_duration(AutoArchiveDuration::OneWeek),
-        //     )
-        //     .await?;
+        channel_id
+            .edit_message(
+                ctx,
+                channel_id.get(),
+                EditMessage::new().embed(embed).components(vec![row]),
+            )
+            .await?;
 
-        // // TODO: Add thread tags based on description
-
-        // channel
-        //     .send_message(
-        //         ctx,
-        //         CreateMessage::new().content(interaction.user.mention().to_string()),
-        //     )
-        //     .await?;
-
-        // post.id = channel.id.get() as i64;
-
-        // post.save::<Db, Manager>(pool).await?;
+        post.save::<Db, Manager>(pool).await?;
 
         Ok(())
     }
