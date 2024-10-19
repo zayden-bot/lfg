@@ -25,7 +25,7 @@ impl SettingsComponents {
             Some(&post.description),
         );
 
-        let modal = CreateModal::new("lfg_create", "Create Event").components(row);
+        let modal = CreateModal::new("lfg_edit", "Edit Event").components(row);
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Modal(modal))
