@@ -15,7 +15,7 @@ use error::Result;
 pub use lfg_post_manager::{LfgPostManager, LfgPostRow};
 pub use modal::LfgCreateModal;
 pub use slash_command::LfgCommand;
-use timezone_manager::TimezoneManager;
+pub use timezone_manager::TimezoneManager;
 
 fn create_lfg_embed(post: &LfgPostRow, owner_name: &str) -> CreateEmbed {
     let timestamp = post.timestamp();
