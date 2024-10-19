@@ -103,7 +103,10 @@ impl LfgCreateModal {
 
         let start_time = {
             let naive_dt = NaiveDateTime::parse_from_str(start_time_str, "%Y-%m-%d %H:%M")?;
-            timezone.from_utc_datetime(&naive_dt)
+            timezone
+                .from_local_datetime(&naive_dt)
+                .single()
+                .expect("Invalid date time")
         };
 
         let mut post = LfgPostRow::new(
