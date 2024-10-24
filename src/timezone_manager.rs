@@ -7,7 +7,7 @@ use serenity::all::UserId;
 use sqlx::{any::AnyQueryResult, Database, Pool};
 
 lazy_static! {
-    static ref LOCALE_TO_TIMEZONE: HashMap<&'static str, chrono_tz::Tz> = {
+    pub static ref LOCALE_TO_TIMEZONE: HashMap<&'static str, chrono_tz::Tz> = {
         let mut m = HashMap::new();
         m.insert("id", Asia::Jakarta);
         m.insert("da", Europe::Copenhagen);
