@@ -3,7 +3,7 @@ mod error;
 mod lfg_post_manager;
 mod modals;
 mod slash_command;
-mod timezone_manager;
+pub mod timezone_manager;
 
 use serenity::all::{
     ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, Mentionable,
