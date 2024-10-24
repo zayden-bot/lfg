@@ -55,10 +55,13 @@ lazy_static! {
                 "Starcrossed",
             ],
         );
-        m.insert("vanguard", vec!["Strike", "Nightfall", "Grandmaster"]);
+        m.insert(
+            "vanguard",
+            vec!["Vanguard Ops", "Nightfall", "Grandmaster", "Onslaught"],
+        );
         m.insert(
             "crucible",
-            vec!["Crucible", "Iron Banner", "Trials of Osiris"],
+            vec!["Crucible", "Competitive", "Iron Banner", "Trials of Osiris"],
         );
         m
     };
