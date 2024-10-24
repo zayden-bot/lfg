@@ -143,6 +143,26 @@ impl LfgCommand {
                     .add_string_choice("Other", "other"),
                 ),
             )
+            .add_option(CreateCommandOption::new(
+                CommandOptionType::SubCommand,
+                "join",
+                "Join a looking for group post",
+            ))
+            .add_option(CreateCommandOption::new(
+                CommandOptionType::SubCommand,
+                "leave",
+                "Leave a looking for group post",
+            ))
+            .add_option(CreateCommandOption::new(
+                CommandOptionType::SubCommand,
+                "joined",
+                "View all the posts you have joined",
+            ))
+            .add_option(CreateCommandOption::new(
+                CommandOptionType::SubCommand,
+                "timezone",
+                "Set your timezone",
+            ))
     }
 }
 // /event join
