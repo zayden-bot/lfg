@@ -1,8 +1,8 @@
 use lazy_static::lazy_static;
 use serenity::all::{
-    CommandInteraction, CommandOptionType, Context, CreateCommand, CreateCommandOption,
-    CreateInteractionResponse, CreateSelectMenu, CreateSelectMenuKind, CreateSelectMenuOption,
-    EditInteractionResponse, ResolvedValue,
+    CommandInteraction, CommandOptionType, Context, CreateButton, CreateCommand,
+    CreateCommandOption, CreateInteractionResponse, CreateSelectMenu, CreateSelectMenuKind,
+    CreateSelectMenuOption, EditInteractionResponse, ResolvedValue,
 };
 use sqlx::{Database, Pool};
 use std::collections::HashMap;
@@ -200,8 +200,10 @@ impl LfgCommand {
             .edit_response(
                 ctx,
                 EditInteractionResponse::new()
+                    .button(CreateButton::new("lfg_timezone_next").label("Next"))
+                    .button(CreateButton::new("lfg_timezone_prev").label("Previous"))
                     .select_menu(menu)
-                    .content("Select the activity you are looking to do"),
+                    .content("Select your timezone"),
             )
             .await?;
 
