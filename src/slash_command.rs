@@ -181,15 +181,15 @@ impl LfgCommand {
             .iter()
             .filter_map(|tz| {
                 let name = tz.name();
+
                 if name.starts_with(region) {
                     Some(CreateSelectMenuOption::new(name, name))
                 } else {
                     None
                 }
             })
+            .take(25)
             .collect::<Vec<_>>();
-
-        println!("{:#?}", timezones);
 
         let menu = CreateSelectMenu::new(
             "lfg_timezone",
