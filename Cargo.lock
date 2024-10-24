@@ -824,6 +824,7 @@ dependencies = [
 name = "lfg"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "chrono",
  "chrono-tz",
  "lazy_static",

@@ -4,6 +4,7 @@ use serenity::all::{
     CreateInteractionResponse, CreateSelectMenu, CreateSelectMenuKind, CreateSelectMenuOption,
     EditInteractionResponse, ResolvedValue,
 };
+use sqlx::{Database, Pool};
 use std::collections::HashMap;
 use zayden_core::parse_options;
 
@@ -70,7 +71,11 @@ lazy_static! {
 pub struct LfgCommand;
 
 impl LfgCommand {
-    pub async fn run(ctx: &Context, interaction: &CommandInteraction) -> Result<()> {
+    pub async fn run<Db: Database, Manager: TimezoneManager<Db>>(
+        ctx: &Context,
+        interaction: &CommandInteraction,
+        pool: &Pool<Db>,
+    ) -> Result<()> {
         let command = &interaction.data.options()[0];
 
         let options = match &command.value {
@@ -79,6 +84,24 @@ impl LfgCommand {
         };
         let options = parse_options(options);
 
+        match command.name {
+            "create" => Self::create::<Db, Manager>(ctx, interaction, pool, options).await?,
+            "join" => Self::join(ctx, interaction, options).await,
+            "leave" => Self::leave(ctx, interaction, options).await,
+            "joined" => Self::joined(ctx, interaction).await,
+            "timezone" => Self::timezone(ctx, interaction, options).await?,
+            _ => unreachable!("Invalid subcommand"),
+        }
+
+        Ok(())
+    }
+
+    async fn create<Db: Database, Manager: TimezoneManager<Db>>(
+        ctx: &Context,
+        interaction: &CommandInteraction,
+        pool: &Pool<Db>,
+        options: HashMap<&str, &ResolvedValue<'_>>,
+    ) -> Result<()> {
         let activity = match options.get("activity") {
             Some(ResolvedValue::String(activity)) => *activity,
             _ => unreachable!("Activity is required"),
@@ -106,14 +129,80 @@ impl LfgCommand {
         } else {
             interaction.delete_response(ctx).await?;
 
-            let timezone = TimezoneManager::get(&interaction.locale).await;
+            let timezone = Manager::get(pool, interaction.user.id, &interaction.locale).await?;
 
-            let modal = create::create_modal(activity, timezone);
+            let modal = create::create_modal(activity, &timezone);
 
             interaction
                 .create_response(ctx, CreateInteractionResponse::Modal(modal))
                 .await?;
         }
+
+        Ok(())
+    }
+
+    async fn join(
+        ctx: &Context,
+        interaction: &CommandInteraction,
+        options: HashMap<&str, &ResolvedValue<'_>>,
+    ) {
+        todo!()
+    }
+
+    async fn leave(
+        ctx: &Context,
+        interaction: &CommandInteraction,
+        options: HashMap<&str, &ResolvedValue<'_>>,
+    ) {
+        todo!()
+    }
+
+    async fn joined(ctx: &Context, interaction: &CommandInteraction) {
+        todo!()
+    }
+
+    async fn timezone(
+        ctx: &Context,
+        interaction: &CommandInteraction,
+        options: HashMap<&str, &ResolvedValue<'_>>,
+    ) -> Result<()> {
+        let region = match options.get("region") {
+            Some(ResolvedValue::String(region)) => {
+                if *region == "other" {
+                    String::from("ETC")
+                } else {
+                    region.to_uppercase()
+                }
+            }
+            _ => unreachable!("Region is required"),
+        };
+
+        let timezones = chrono_tz::TZ_VARIANTS
+            .iter()
+            .filter_map(|tz| {
+                let name = tz.name();
+                if name.starts_with(&region) {
+                    Some(CreateSelectMenuOption::new(name, name))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let menu = CreateSelectMenu::new(
+            "lfg_timezone",
+            CreateSelectMenuKind::String { options: timezones },
+        );
+
+        interaction
+            .edit_response(
+                ctx,
+                EditInteractionResponse::new()
+                    .select_menu(menu)
+                    .content("Select the activity you are looking to do"),
+            )
+            .await?;
+
         Ok(())
     }
 
@@ -143,26 +232,48 @@ impl LfgCommand {
                     .add_string_choice("Other", "other"),
                 ),
             )
-            .add_option(CreateCommandOption::new(
-                CommandOptionType::SubCommand,
-                "join",
-                "Join a looking for group post",
-            ))
-            .add_option(CreateCommandOption::new(
-                CommandOptionType::SubCommand,
-                "leave",
-                "Leave a looking for group post",
-            ))
-            .add_option(CreateCommandOption::new(
-                CommandOptionType::SubCommand,
-                "joined",
-                "View all the posts you have joined",
-            ))
-            .add_option(CreateCommandOption::new(
-                CommandOptionType::SubCommand,
-                "timezone",
-                "Set your timezone",
-            ))
+            // .add_option(CreateCommandOption::new(
+            //     CommandOptionType::SubCommand,
+            //     "join",
+            //     "Join a looking for group post",
+            // ))
+            // .add_option(CreateCommandOption::new(
+            //     CommandOptionType::SubCommand,
+            //     "leave",
+            //     "Leave a looking for group post",
+            // ))
+            // .add_option(CreateCommandOption::new(
+            //     CommandOptionType::SubCommand,
+            //     "joined",
+            //     "View all the posts you have joined",
+            // ))
+            .add_option(
+                CreateCommandOption::new(
+                    CommandOptionType::SubCommand,
+                    "timezone",
+                    "Set your timezone",
+                )
+                .add_sub_option(
+                    CreateCommandOption::new(CommandOptionType::String, "region", "Your region")
+                        .required(true)
+                        .add_string_choice("Africa", "africa")
+                        .add_string_choice("America", "america")
+                        .add_string_choice("Antarctica", "antarctica")
+                        .add_string_choice("Arctic", "arctic")
+                        .add_string_choice("Asia", "asia")
+                        .add_string_choice("Atlantic", "atlantic")
+                        .add_string_choice("Australia", "australia")
+                        .add_string_choice("Brazil", "brazil")
+                        .add_string_choice("Canada", "canada")
+                        .add_string_choice("Chile", "chile")
+                        .add_string_choice("Europe", "europe")
+                        .add_string_choice("Indian", "indian")
+                        .add_string_choice("Mexico", "mexico")
+                        .add_string_choice("Pacific", "pacific")
+                        .add_string_choice("US", "us")
+                        .add_string_choice("Other", "other"),
+                ),
+            )
     }
 }
 // /event join

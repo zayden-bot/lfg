@@ -17,14 +17,15 @@ const LFG_CHANNEL: ChannelId = ChannelId::new(1091736203029659728);
 pub struct LfgCreateModal;
 
 impl LfgCreateModal {
-    pub async fn run<Db, Manager>(
+    pub async fn run<Db, PostManager, TzManager>(
         ctx: &Context,
         interaction: &ModalInteraction,
         pool: &Pool<Db>,
     ) -> Result<()>
     where
         Db: sqlx::Database,
-        Manager: LfgPostManager<Db>,
+        PostManager: LfgPostManager<Db>,
+        TzManager: TimezoneManager<Db>,
     {
         let mut inputs = parse_modal_data(&interaction.data.components);
 
@@ -43,7 +44,7 @@ impl LfgCreateModal {
             .remove("start time")
             .expect("Start time should exist as it's required");
 
-        let timezone = TimezoneManager::get(&interaction.locale).await;
+        let timezone = TzManager::get(pool, interaction.user.id, &interaction.locale).await?;
 
         let start_time = {
             let naive_dt = NaiveDateTime::parse_from_str(start_time_str, "%Y-%m-%d %H:%M")?;
@@ -88,7 +89,7 @@ impl LfgCreateModal {
 
         post.id = channel.id.get() as i64;
 
-        post.save::<Db, Manager>(pool).await?;
+        post.save::<Db, PostManager>(pool).await?;
 
         Ok(())
     }

@@ -8,14 +8,15 @@ use crate::{create_lfg_embed, LfgPostManager, LfgPostRow, Result, TimezoneManage
 pub struct LfgEditModal;
 
 impl LfgEditModal {
-    pub async fn run<Db, Manager>(
+    pub async fn run<Db, PostManager, TzManager>(
         ctx: &Context,
         interaction: &ModalInteraction,
         pool: &Pool<Db>,
     ) -> Result<()>
     where
         Db: sqlx::Database,
-        Manager: LfgPostManager<Db>,
+        PostManager: LfgPostManager<Db>,
+        TzManager: TimezoneManager<Db>,
     {
         let mut inputs = parse_modal_data(&interaction.data.components);
 
@@ -34,7 +35,7 @@ impl LfgEditModal {
             .remove("start time")
             .expect("Start time should exist as it's required");
 
-        let timezone = TimezoneManager::get(&interaction.locale).await;
+        let timezone = TzManager::get(pool, interaction.user.id, &interaction.locale).await?;
 
         let start_time = {
             let naive_dt = NaiveDateTime::parse_from_str(start_time_str, "%Y-%m-%d %H:%M")?;
@@ -72,7 +73,7 @@ impl LfgEditModal {
             .edit_message(ctx, channel_id.get(), EditMessage::new().embed(embed))
             .await?;
 
-        post.save::<Db, Manager>(pool).await?;
+        post.save::<Db, PostManager>(pool).await?;
 
         Ok(())
     }

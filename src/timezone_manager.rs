@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
+use async_trait::async_trait;
 use chrono_tz::{America, Asia, Europe, Tz};
 use lazy_static::lazy_static;
+use serenity::all::UserId;
+use sqlx::{any::AnyQueryResult, Database, Pool};
 
 lazy_static! {
     static ref LOCALE_TO_TIMEZONE: HashMap<&'static str, chrono_tz::Tz> = {
@@ -43,10 +46,12 @@ lazy_static! {
 
 }
 
-pub struct TimezoneManager;
-
-impl TimezoneManager {
-    pub async fn get<'a>(local: &str) -> &'a Tz {
-        LOCALE_TO_TIMEZONE.get(local).unwrap_or(&chrono_tz::UTC)
-    }
+#[async_trait]
+pub trait TimezoneManager<Db: Database> {
+    async fn get(pool: &Pool<Db>, id: impl Into<UserId> + Send, local: &str) -> sqlx::Result<Tz>;
+    async fn save(
+        pool: &Pool<Db>,
+        id: impl Into<UserId> + Send,
+        tz: Tz,
+    ) -> sqlx::Result<AnyQueryResult>;
 }

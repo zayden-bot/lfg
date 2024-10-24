@@ -14,7 +14,11 @@ sqlx = { version = "*", default-features = false, features = [
     "any",
     "macros",
     "chrono",
+    # "postgres",
+    # "runtime-tokio",
+
 ] }
+async-trait = { version = "*", default-features = false }
 zayden-core = { git = "https://github.com/zayden-bot/slash-command-core.git", branch = "master" }
 
 [dependencies.serenity]
