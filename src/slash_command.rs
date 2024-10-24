@@ -169,9 +169,9 @@ impl LfgCommand {
         let region = match options.get("region") {
             Some(ResolvedValue::String(region)) => {
                 if *region == "other" {
-                    String::from("ETC")
+                    "Etc"
                 } else {
-                    region.to_uppercase()
+                    region
                 }
             }
             _ => unreachable!("Region is required"),
@@ -181,7 +181,7 @@ impl LfgCommand {
             .iter()
             .filter_map(|tz| {
                 let name = tz.name();
-                if name.starts_with(&region) {
+                if name.starts_with(region) {
                     Some(CreateSelectMenuOption::new(name, name))
                 } else {
                     None
@@ -258,22 +258,22 @@ impl LfgCommand {
                 .add_sub_option(
                     CreateCommandOption::new(CommandOptionType::String, "region", "Your region")
                         .required(true)
-                        .add_string_choice("Africa", "africa")
-                        .add_string_choice("America", "america")
-                        .add_string_choice("Antarctica", "antarctica")
-                        .add_string_choice("Arctic", "arctic")
-                        .add_string_choice("Asia", "asia")
-                        .add_string_choice("Atlantic", "atlantic")
-                        .add_string_choice("Australia", "australia")
-                        .add_string_choice("Brazil", "brazil")
-                        .add_string_choice("Canada", "canada")
-                        .add_string_choice("Chile", "chile")
-                        .add_string_choice("Europe", "europe")
-                        .add_string_choice("Indian", "indian")
-                        .add_string_choice("Mexico", "mexico")
-                        .add_string_choice("Pacific", "pacific")
-                        .add_string_choice("US", "us")
-                        .add_string_choice("Other", "other"),
+                        .add_string_choice("Africa", "Africa")
+                        .add_string_choice("America", "America")
+                        .add_string_choice("Antarctica", "Antarctica")
+                        .add_string_choice("Arctic", "Arctic")
+                        .add_string_choice("Asia", "Asia")
+                        .add_string_choice("Atlantic", "Atlantic")
+                        .add_string_choice("Australia", "Australia")
+                        .add_string_choice("Brazil", "Brazil")
+                        .add_string_choice("Canada", "Canada")
+                        .add_string_choice("Chile", "Chile")
+                        .add_string_choice("Europe", "Europe")
+                        .add_string_choice("Indian", "Indian")
+                        .add_string_choice("Mexico", "Mexico")
+                        .add_string_choice("Pacific", "Pacific")
+                        .add_string_choice("US", "US")
+                        .add_string_choice("Other", "Other"),
                 ),
             )
     }
