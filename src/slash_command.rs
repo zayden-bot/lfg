@@ -200,9 +200,9 @@ impl LfgCommand {
             .edit_response(
                 ctx,
                 EditInteractionResponse::new()
+                    .select_menu(menu)
                     .button(CreateButton::new("lfg_timezone_next").label("Next"))
                     .button(CreateButton::new("lfg_timezone_prev").label("Previous"))
-                    .select_menu(menu)
                     .content("Select your timezone"),
             )
             .await?;
