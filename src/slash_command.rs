@@ -189,6 +189,8 @@ impl LfgCommand {
             })
             .collect::<Vec<_>>();
 
+        println!("{:#?}", timezones);
+
         let menu = CreateSelectMenu::new(
             "lfg_timezone",
             CreateSelectMenuKind::String { options: timezones },
