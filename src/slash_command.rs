@@ -280,6 +280,3 @@ impl LfgCommand {
             )
     }
 }
-// /event join
-// /event joined
-// /event leave
