@@ -1,11 +1,13 @@
+use chrono_tz::Tz;
 use lazy_static::lazy_static;
 use serenity::all::{
-    CommandInteraction, CommandOptionType, Context, CreateButton, CreateCommand,
-    CreateCommandOption, CreateInteractionResponse, CreateSelectMenu, CreateSelectMenuKind,
-    CreateSelectMenuOption, EditInteractionResponse, ResolvedValue,
+    AutocompleteChoice, CommandInteraction, CommandOptionType, Context, CreateAutocompleteResponse,
+    CreateCommand, CreateCommandOption, CreateInteractionResponse, CreateSelectMenu,
+    CreateSelectMenuKind, CreateSelectMenuOption, EditInteractionResponse, ResolvedValue,
 };
 use sqlx::{Database, Pool};
 use std::collections::HashMap;
+use std::str::FromStr;
 use zayden_core::parse_options;
 
 use crate::modals::create;
@@ -166,44 +168,18 @@ impl LfgCommand {
         interaction: &CommandInteraction,
         options: HashMap<&str, &ResolvedValue<'_>>,
     ) -> Result<()> {
-        let region = match options.get("region") {
-            Some(ResolvedValue::String(region)) => {
-                if *region == "other" {
-                    "Etc"
-                } else {
-                    region
-                }
-            }
+        let timezone = match options.get("region") {
+            Some(ResolvedValue::String(region)) => *region,
             _ => unreachable!("Region is required"),
         };
 
-        let timezones = chrono_tz::TZ_VARIANTS
-            .iter()
-            .filter_map(|tz| {
-                let name = tz.name();
-
-                if name.starts_with(region) {
-                    Some(CreateSelectMenuOption::new(name, name))
-                } else {
-                    None
-                }
-            })
-            .take(25)
-            .collect::<Vec<_>>();
-
-        let menu = CreateSelectMenu::new(
-            "lfg_timezone",
-            CreateSelectMenuKind::String { options: timezones },
-        );
+        let tz = Tz::from_str(timezone).unwrap();
 
         interaction
             .edit_response(
                 ctx,
                 EditInteractionResponse::new()
-                    .select_menu(menu)
-                    .button(CreateButton::new("lfg_timezone_next").label("Next"))
-                    .button(CreateButton::new("lfg_timezone_prev").label("Previous"))
-                    .content("Select your timezone"),
+                    .content(format!("Your timezone has been set to {}", tz.name())),
             )
             .await?;
 
@@ -278,5 +254,36 @@ impl LfgCommand {
                         .add_string_choice("Other", "Other"),
                 ),
             )
+    }
+
+    pub async fn autocomplete(ctx: &Context, interaction: &CommandInteraction) -> Result<()> {
+        let command = &interaction.data.options()[0];
+
+        if command.name != "timezone" {
+            return Ok(());
+        }
+
+        let option = interaction.data.autocomplete().unwrap();
+
+        let filtered = chrono_tz::TZ_VARIANTS
+            .iter()
+            .filter(|tz| {
+                let name = tz.name();
+                name.starts_with(option.value)
+            })
+            .take(25)
+            .map(|tz| AutocompleteChoice::new(tz.name(), tz.name()))
+            .collect::<Vec<_>>();
+
+        interaction
+            .create_response(
+                ctx,
+                CreateInteractionResponse::Autocomplete(
+                    CreateAutocompleteResponse::new().set_choices(filtered),
+                ),
+            )
+            .await?;
+
+        Ok(())
     }
 }
