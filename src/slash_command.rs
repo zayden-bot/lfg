@@ -263,7 +263,11 @@ impl LfgCommand {
 
                 ACTIVITY_MAP
                     .keys()
-                    .filter(|activity| activity.starts_with(option.value))
+                    .filter(|activity| {
+                        activity
+                            .to_lowercase()
+                            .starts_with(&option.value.to_lowercase())
+                    })
                     .take(25)
                     .map(|activity| {
                         AutocompleteChoice::new(activity.to_string(), activity.to_string())
@@ -277,8 +281,8 @@ impl LfgCommand {
                 chrono_tz::TZ_VARIANTS
                     .iter()
                     .filter(|tz| {
-                        let name = tz.name();
-                        name.starts_with(option.value)
+                        let name = tz.name().to_lowercase();
+                        name.contains(&option.value.to_lowercase())
                     })
                     .take(25)
                     .map(|tz| AutocompleteChoice::new(tz.name(), tz.name()))
