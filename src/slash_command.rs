@@ -236,22 +236,7 @@ impl LfgCommand {
                 .add_sub_option(
                     CreateCommandOption::new(CommandOptionType::String, "region", "Your region")
                         .required(true)
-                        .add_string_choice("Africa", "Africa")
-                        .add_string_choice("America", "America")
-                        .add_string_choice("Antarctica", "Antarctica")
-                        .add_string_choice("Arctic", "Arctic")
-                        .add_string_choice("Asia", "Asia")
-                        .add_string_choice("Atlantic", "Atlantic")
-                        .add_string_choice("Australia", "Australia")
-                        .add_string_choice("Brazil", "Brazil")
-                        .add_string_choice("Canada", "Canada")
-                        .add_string_choice("Chile", "Chile")
-                        .add_string_choice("Europe", "Europe")
-                        .add_string_choice("Indian", "Indian")
-                        .add_string_choice("Mexico", "Mexico")
-                        .add_string_choice("Pacific", "Pacific")
-                        .add_string_choice("US", "US")
-                        .add_string_choice("Other", "Other"),
+                        .set_autocomplete(true),
                 ),
             )
     }
