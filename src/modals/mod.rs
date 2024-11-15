@@ -4,26 +4,9 @@ pub use create::LfgCreateModal;
 mod edit;
 pub use edit::LfgEditModal;
 
-use std::collections::HashMap;
-
 use chrono::DateTime;
 use chrono_tz::Tz;
-use lazy_static::lazy_static;
 use serenity::all::{CreateActionRow, CreateInputText, InputTextStyle};
-
-use crate::slash_command::ACTIVITY_MAP;
-
-lazy_static! {
-    static ref MAX_FIRETEAM_SIZE: HashMap<&'static str, u8> = {
-        let mut m = HashMap::new();
-        for activity in ACTIVITY_MAP["raid"].iter() {
-            m.insert(*activity, 6);
-        }
-        m.insert("Crucible", 6);
-        m.insert("Iron Banner", 6);
-        m
-    };
-}
 
 pub fn modal_components(
     activity: &str,

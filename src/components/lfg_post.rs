@@ -4,7 +4,7 @@ use serenity::all::{
 };
 use sqlx::Pool;
 
-use crate::{create_lfg_embed, create_main_row, Error, LfgPostManager, Result};
+use crate::{create_lfg_embed, create_main_row, join_post, Error, LfgPostManager, Result};
 
 pub struct PostComponents;
 
@@ -18,17 +18,9 @@ impl PostComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let mut post = Manager::get(pool, &interaction.message.id).await?;
+        let post = Manager::get(pool, &interaction.message.id).await?;
 
-        if post.is_full() {
-            return Err(Error::FireteamFull);
-        }
-
-        post.join(interaction.user.id);
-
-        let embed = create_lfg_embed(&post, &post.owner(ctx).await?.name);
-
-        post.save::<Db, Manager>(pool).await?;
+        let embed = join_post::<Db, Manager>(ctx, pool, post, interaction.user.id).await?;
 
         interaction
             .create_response(

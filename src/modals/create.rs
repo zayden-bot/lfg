@@ -1,16 +1,13 @@
-use chrono::{NaiveDateTime, TimeZone, Utc};
-use chrono_tz::Tz;
+use chrono::{NaiveDateTime, TimeZone};
 use serenity::all::{
-    AutoArchiveDuration, ChannelId, Context, CreateForumPost, CreateMessage, CreateModal,
-    Mentionable, ModalInteraction,
+    AutoArchiveDuration, ChannelId, Context, CreateForumPost, CreateMessage, Mentionable,
+    ModalInteraction,
 };
 use sqlx::Pool;
 use zayden_core::parse_modal_data;
 
 use crate::TimezoneManager;
 use crate::{create_lfg_embed, create_main_row, LfgPostManager, LfgPostRow, Result};
-
-use super::{modal_components, MAX_FIRETEAM_SIZE};
 
 const LFG_CHANNEL: ChannelId = ChannelId::new(1091736203029659728);
 
@@ -93,17 +90,4 @@ impl LfgCreateModal {
 
         Ok(())
     }
-}
-
-pub fn create_modal(activity: &str, timezone: &Tz) -> CreateModal {
-    let fireteam_size = match MAX_FIRETEAM_SIZE.get(activity) {
-        Some(fireteam_size) => *fireteam_size,
-        None => 3,
-    };
-
-    let now = timezone.from_utc_datetime(&Utc::now().naive_utc());
-
-    let row = modal_components(activity, now, fireteam_size, None);
-
-    CreateModal::new("lfg_create", "Create Event").components(row)
 }

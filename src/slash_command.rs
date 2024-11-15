@@ -1,71 +1,64 @@
+use std::collections::HashMap;
+use std::str::FromStr;
+
+use chrono::{TimeZone, Utc};
 use chrono_tz::Tz;
 use lazy_static::lazy_static;
 use serenity::all::{
     AutocompleteChoice, CommandInteraction, CommandOptionType, Context, CreateAutocompleteResponse,
-    CreateCommand, CreateCommandOption, CreateInteractionResponse, CreateSelectMenu,
-    CreateSelectMenuKind, CreateSelectMenuOption, EditInteractionResponse, ResolvedValue,
+    CreateCommand, CreateCommandOption, CreateInteractionResponse, CreateModal,
+    EditInteractionResponse, EditMessage, Mentionable, ResolvedValue,
 };
 use sqlx::{Database, Pool};
-use std::collections::HashMap;
-use std::str::FromStr;
 use zayden_core::parse_options;
 
-use crate::modals::create;
+use crate::modals::modal_components;
 use crate::timezone_manager::TimezoneManager;
-use crate::Result;
+use crate::{join_post, LfgPostManager, Result};
 
 lazy_static! {
-    pub static ref ACTIVITY_MAP: HashMap<&'static str, Vec<&'static str>> = {
+    pub static ref ACTIVITY_MAP: HashMap<&'static str, u8> = {
         let mut m = HashMap::new();
-        m.insert(
-            "raid",
-            vec![
-                "Salvation's Edge",
-                "Crota's End",
-                "Root of Nightmares",
-                "King's Fall",
-                "Vow of the Disciple",
-                "Vault of Glass",
-                "Deep Stone Crypt",
-                "Garden of Salvation",
-                "Last Wish",
-            ],
-        );
-        m.insert(
-            "dungeon",
-            vec![
-                "Vesper's Host",
-                "Warlord's Ruin",
-                "Ghosts of the Deep",
-                "Spire of the Watcher",
-                "Duality",
-                "Grasp of Avarice",
-                "Prophecy",
-                "Pit of Heresy",
-                "Shattered Throne",
-            ],
-        );
-        m.insert(
-            "exotic mission",
-            vec![
-                "The Whisper",
-                "Zero Hour",
-                "Harbinger",
-                "Presage",
-                "Vox Obscura",
-                "Operation: Seraph's Shield",
-                "Node.Ovrd.Avalon",
-                "Starcrossed",
-            ],
-        );
-        m.insert(
-            "vanguard",
-            vec!["Vanguard Ops", "Nightfall", "Grandmaster", "Onslaught"],
-        );
-        m.insert(
-            "crucible",
-            vec!["Crucible", "Competitive", "Iron Banner", "Trials of Osiris"],
-        );
+        m.insert("Salvation's Edge", 6);
+        m.insert("Crota's End", 6);
+        m.insert("Root of Nightmares", 6);
+        m.insert("King's Fall", 6);
+        m.insert("Vow of the Disciple", 6);
+        m.insert("Vault of Glass", 6);
+        m.insert("Deep Stone Crypt", 6);
+        m.insert("Garden of Salvation", 6);
+        m.insert("Last Wish", 6);
+
+        m.insert("Vesper's Host", 3);
+        m.insert("Warlord's Ruin", 3);
+        m.insert("Ghosts of the Deep", 3);
+        m.insert("Spire of the Watcher", 3);
+        m.insert("Duality", 3);
+        m.insert("Grasp of Avarice", 3);
+        m.insert("Prophecy", 3);
+        m.insert("Pit of Heresy", 3);
+        m.insert("Shattered Throne", 3);
+
+        m.insert("Duel Destiny", 2);
+        m.insert("The Whisper", 3);
+        m.insert("Zero Hour", 3);
+        m.insert("Harbinger", 3);
+        m.insert("Presage", 3);
+        m.insert("Vox Obscura", 3);
+        m.insert("Operation: Seraph's Shield", 3);
+        m.insert("Node.Ovrd.Avalon", 3);
+        m.insert("Starcrossed", 3);
+
+        m.insert("Vanguard Ops", 3);
+        m.insert("Nightfall", 3);
+        m.insert("Grandmaster", 3);
+        m.insert("Onslaught", 3);
+
+        m.insert("Crucible", 6);
+        m.insert("Competitive", 6);
+        m.insert("Iron Banner", 6);
+        m.insert("Trials of Osiris", 3);
+
         m
     };
 }
@@ -73,11 +66,16 @@ lazy_static! {
 pub struct LfgCommand;
 
 impl LfgCommand {
-    pub async fn run<Db: Database, Manager: TimezoneManager<Db>>(
+    pub async fn run<Db, PostManager, TzManager>(
         ctx: &Context,
         interaction: &CommandInteraction,
         pool: &Pool<Db>,
-    ) -> Result<()> {
+    ) -> Result<()>
+    where
+        Db: sqlx::Database,
+        PostManager: LfgPostManager<Db>,
+        TzManager: TimezoneManager<Db>,
+    {
         let command = &interaction.data.options()[0];
 
         let options = match &command.value {
@@ -87,11 +85,11 @@ impl LfgCommand {
         let options = parse_options(options);
 
         match command.name {
-            "create" => Self::create::<Db, Manager>(ctx, interaction, pool, options).await?,
-            "join" => Self::join(ctx, interaction, options).await,
+            "create" => Self::create::<Db, TzManager>(ctx, interaction, pool, options).await?,
+            "join" => Self::join::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "leave" => Self::leave(ctx, interaction, options).await,
             "joined" => Self::joined(ctx, interaction).await,
-            "timezone" => Self::timezone(ctx, interaction, options).await?,
+            "timezone" => Self::timezone::<Db, TzManager>(ctx, interaction, pool, options).await?,
             _ => unreachable!("Invalid subcommand"),
         }
 
@@ -109,46 +107,55 @@ impl LfgCommand {
             _ => unreachable!("Activity is required"),
         };
 
-        if let Some(sub_activity) = ACTIVITY_MAP.get(activity.split_whitespace().next().unwrap()) {
-            let menu = CreateSelectMenu::new(
-                "lfg_activity",
-                CreateSelectMenuKind::String {
-                    options: sub_activity
-                        .iter()
-                        .map(|a| CreateSelectMenuOption::new(*a, *a))
-                        .collect(),
-                },
-            );
+        interaction.delete_response(ctx).await?;
 
-            interaction
-                .edit_response(
-                    ctx,
-                    EditInteractionResponse::new()
-                        .select_menu(menu)
-                        .content("Select the activity you are looking to do"),
-                )
-                .await?;
-        } else {
-            interaction.delete_response(ctx).await?;
+        let timezone = Manager::get(pool, interaction.user.id, &interaction.locale).await?;
+        let now = timezone.from_utc_datetime(&Utc::now().naive_utc());
 
-            let timezone = Manager::get(pool, interaction.user.id, &interaction.locale).await?;
+        let fireteam_size = match ACTIVITY_MAP.get(activity) {
+            Some(fireteam_size) => *fireteam_size,
+            None => 3,
+        };
 
-            let modal = create::create_modal(activity, &timezone);
+        let row = modal_components(activity, now, fireteam_size, None);
 
-            interaction
-                .create_response(ctx, CreateInteractionResponse::Modal(modal))
-                .await?;
-        }
+        let modal = CreateModal::new("lfg_create", "Create Event").components(row);
+
+        interaction
+            .create_response(ctx, CreateInteractionResponse::Modal(modal))
+            .await?;
 
         Ok(())
     }
 
-    async fn join(
+    async fn join<Db: Database, Manager: LfgPostManager<Db>>(
         ctx: &Context,
         interaction: &CommandInteraction,
+        pool: &Pool<Db>,
         options: HashMap<&str, &ResolvedValue<'_>>,
-    ) {
-        todo!()
+    ) -> Result<()> {
+        let thread_id = match options.get("channel") {
+            Some(ResolvedValue::Channel(channel)) => channel.id,
+            _ => unreachable!("Thread is required"),
+        };
+
+        let post = Manager::get(pool, thread_id.get()).await?;
+
+        let embed = join_post::<Db, Manager>(ctx, pool, post, interaction.user.id).await?;
+
+        thread_id
+            .edit_message(ctx, thread_id.get(), EditMessage::new().embed(embed))
+            .await?;
+
+        interaction
+            .edit_response(
+                ctx,
+                EditInteractionResponse::new()
+                    .content(format!("You have joined {}", thread_id.mention())),
+            )
+            .await?;
+
+        Ok(())
     }
 
     async fn leave(
@@ -163,9 +170,10 @@ impl LfgCommand {
         todo!()
     }
 
-    async fn timezone(
+    async fn timezone<Db: Database, Manager: TimezoneManager<Db>>(
         ctx: &Context,
         interaction: &CommandInteraction,
+        pool: &Pool<Db>,
         options: HashMap<&str, &ResolvedValue<'_>>,
     ) -> Result<()> {
         let timezone = match options.get("region") {
@@ -173,7 +181,9 @@ impl LfgCommand {
             _ => unreachable!("Region is required"),
         };
 
-        let tz = Tz::from_str(timezone).unwrap();
+        let tz = Tz::from_str(timezone)?;
+
+        Manager::save(pool, interaction.user.id, tz).await?;
 
         interaction
             .edit_response(
@@ -202,21 +212,24 @@ impl LfgCommand {
                         "The activity you are looking to do",
                     )
                     .required(true)
-                    .add_string_choice("Raid", "raid")
-                    .add_string_choice("Dungeon", "dungeon")
-                    .add_string_choice("Exotic Mission", "exotic mission")
-                    .add_string_choice("Vangard", "vanguard")
-                    .add_string_choice("Gambit", "gambit")
-                    .add_string_choice("Crucible", "crucible")
-                    .add_string_choice("Seasonal", "seasonal")
-                    .add_string_choice("Other", "other"),
+                    .set_autocomplete(true),
                 ),
             )
-            // .add_option(CreateCommandOption::new(
-            //     CommandOptionType::SubCommand,
-            //     "join",
-            //     "Join a looking for group post",
-            // ))
+            .add_option(
+                CreateCommandOption::new(
+                    CommandOptionType::SubCommand,
+                    "join",
+                    "Join a looking for group post",
+                )
+                .add_sub_option(
+                    CreateCommandOption::new(
+                        CommandOptionType::Channel,
+                        "thread",
+                        "The LFG thread",
+                    )
+                    .required(true),
+                ),
+            )
             // .add_option(CreateCommandOption::new(
             //     CommandOptionType::SubCommand,
             //     "leave",
@@ -244,21 +257,35 @@ impl LfgCommand {
     pub async fn autocomplete(ctx: &Context, interaction: &CommandInteraction) -> Result<()> {
         let command = &interaction.data.options()[0];
 
-        if command.name != "timezone" {
-            return Ok(());
-        }
+        let filtered = match command.name {
+            "create" => {
+                let option = interaction.data.autocomplete().unwrap();
 
-        let option = interaction.data.autocomplete().unwrap();
+                ACTIVITY_MAP
+                    .keys()
+                    .filter(|activity| activity.starts_with(option.value))
+                    .take(25)
+                    .map(|activity| {
+                        AutocompleteChoice::new(activity.to_string(), activity.to_string())
+                    })
+                    .collect::<Vec<_>>()
+            }
 
-        let filtered = chrono_tz::TZ_VARIANTS
-            .iter()
-            .filter(|tz| {
-                let name = tz.name();
-                name.starts_with(option.value)
-            })
-            .take(25)
-            .map(|tz| AutocompleteChoice::new(tz.name(), tz.name()))
-            .collect::<Vec<_>>();
+            "timezone" => {
+                let option = interaction.data.autocomplete().unwrap();
+
+                chrono_tz::TZ_VARIANTS
+                    .iter()
+                    .filter(|tz| {
+                        let name = tz.name();
+                        name.starts_with(option.value)
+                    })
+                    .take(25)
+                    .map(|tz| AutocompleteChoice::new(tz.name(), tz.name()))
+                    .collect::<Vec<_>>()
+            }
+            _ => return Ok(()),
+        };
 
         interaction
             .create_response(

@@ -5,16 +5,17 @@ mod modals;
 mod slash_command;
 pub mod timezone_manager;
 
-use serenity::all::{
-    ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, Mentionable,
-};
-
-pub use components::{ActivityComponent, KickComponent, PostComponents, SettingsComponents};
+pub use components::{KickComponent, PostComponents, SettingsComponents};
 pub use error::Error;
 use error::Result;
 pub use lfg_post_manager::{LfgPostManager, LfgPostRow};
 pub use modals::{LfgCreateModal, LfgEditModal};
+use serenity::all::{
+    ButtonStyle, Context, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter,
+    Mentionable, UserId,
+};
 pub use slash_command::LfgCommand;
+use sqlx::{Database, Pool};
 pub use timezone_manager::TimezoneManager;
 
 fn create_lfg_embed(post: &LfgPostRow, owner_name: &str) -> CreateEmbed {
@@ -68,4 +69,23 @@ fn create_main_row() -> CreateActionRow {
             .emoji('⚙')
             .style(ButtonStyle::Secondary),
     ])
+}
+
+async fn join_post<Db: Database, Manager: LfgPostManager<Db>>(
+    ctx: &Context,
+    pool: &Pool<Db>,
+    mut post: LfgPostRow,
+    user_id: impl Into<UserId>,
+) -> Result<CreateEmbed> {
+    if post.is_full() {
+        return Err(Error::FireteamFull);
+    }
+
+    post.join(user_id);
+
+    let embed = create_lfg_embed(&post, &post.owner(ctx).await?.name);
+
+    post.save::<Db, Manager>(pool).await?;
+
+    Ok(embed)
 }
