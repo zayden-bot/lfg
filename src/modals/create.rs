@@ -1,29 +1,32 @@
 use chrono::{NaiveDateTime, TimeZone};
 use serenity::all::{
-    AutoArchiveDuration, ChannelId, Context, CreateForumPost, CreateMessage, Mentionable,
-    ModalInteraction,
+    AutoArchiveDuration, Context, CreateForumPost, CreateMessage, Mentionable, ModalInteraction,
 };
 use sqlx::Pool;
 use zayden_core::parse_modal_data;
 
-use crate::TimezoneManager;
-use crate::{create_lfg_embed, create_main_row, LfgPostManager, LfgPostRow, Result};
-
-const LFG_CHANNEL: ChannelId = ChannelId::new(1091736203029659728);
+use crate::{create_lfg_embed, create_main_row, Error, LfgPostManager, LfgPostRow, Result};
+use crate::{LfgGuildManager, TimezoneManager};
 
 pub struct LfgCreateModal;
 
 impl LfgCreateModal {
-    pub async fn run<Db, PostManager, TzManager>(
+    pub async fn run<Db, GuildManager, PostManager, TzManager>(
         ctx: &Context,
         interaction: &ModalInteraction,
         pool: &Pool<Db>,
     ) -> Result<()>
     where
         Db: sqlx::Database,
+        GuildManager: LfgGuildManager<Db>,
         PostManager: LfgPostManager<Db>,
         TzManager: TimezoneManager<Db>,
     {
+        let guild_id = match interaction.guild_id {
+            Some(guild_id) => guild_id,
+            None => return Err(Error::GuildRequired),
+        };
+
         let mut inputs = parse_modal_data(&interaction.data.components);
 
         let activity = inputs
@@ -64,7 +67,13 @@ impl LfgCreateModal {
 
         let row = create_main_row();
 
-        let channel = LFG_CHANNEL
+        let lfg_guild = GuildManager::get(pool, guild_id).await?;
+        let channel_id = match lfg_guild {
+            Some(guild) => guild.channel_id(),
+            None => return Err(Error::MissingSetup),
+        };
+
+        let thread = channel_id
             .create_forum_post(
                 ctx,
                 CreateForumPost::new(
@@ -77,14 +86,14 @@ impl LfgCreateModal {
 
         // TODO: Add thread tags based on description
 
-        channel
+        thread
             .send_message(
                 ctx,
                 CreateMessage::new().content(interaction.user.mention().to_string()),
             )
             .await?;
 
-        post.id = channel.id.get() as i64;
+        post.id = thread.id.get() as i64;
 
         post.save::<Db, PostManager>(pool).await?;
 

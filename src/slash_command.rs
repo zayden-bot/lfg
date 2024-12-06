@@ -14,7 +14,7 @@ use zayden_core::parse_options;
 
 use crate::modals::modal_components;
 use crate::timezone_manager::TimezoneManager;
-use crate::{join_post, LfgPostManager, Result};
+use crate::{join_post, Error, LfgGuildManager, LfgPostManager, Result};
 
 lazy_static! {
     pub static ref ACTIVITY_MAP: HashMap<&'static str, u8> = {
@@ -66,13 +66,14 @@ lazy_static! {
 pub struct LfgCommand;
 
 impl LfgCommand {
-    pub async fn run<Db, PostManager, TzManager>(
+    pub async fn run<Db, GuildManager, PostManager, TzManager>(
         ctx: &Context,
         interaction: &CommandInteraction,
         pool: &Pool<Db>,
     ) -> Result<()>
     where
         Db: sqlx::Database,
+        GuildManager: LfgGuildManager<Db>,
         PostManager: LfgPostManager<Db>,
         TzManager: TimezoneManager<Db>,
     {
@@ -85,6 +86,7 @@ impl LfgCommand {
         let options = parse_options(options);
 
         match command.name {
+            "setup" => Self::setup::<Db, GuildManager>(ctx, interaction, pool, options).await?,
             "create" => Self::create::<Db, TzManager>(ctx, interaction, pool, options).await?,
             "join" => Self::join::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "leave" => Self::leave(ctx, interaction, options).await,
@@ -92,6 +94,39 @@ impl LfgCommand {
             "timezone" => Self::timezone::<Db, TzManager>(ctx, interaction, pool, options).await?,
             _ => unreachable!("Invalid subcommand"),
         }
+
+        Ok(())
+    }
+
+    async fn setup<Db: Database, Manager: LfgGuildManager<Db>>(
+        ctx: &Context,
+        interaction: &CommandInteraction,
+        pool: &Pool<Db>,
+        options: HashMap<&str, &ResolvedValue<'_>>,
+    ) -> Result<()> {
+        let guild_id = match interaction.guild_id {
+            Some(guild_id) => guild_id,
+            None => return Err(Error::GuildRequired),
+        };
+
+        let channel = match options.get("channel") {
+            Some(ResolvedValue::Channel(channel)) => channel.id,
+            _ => unreachable!("Channel is required"),
+        };
+
+        let role = match options.get("role") {
+            Some(ResolvedValue::Role(role)) => Some(role.id),
+            _ => None,
+        };
+
+        Manager::save(pool, guild_id, channel, role).await?;
+
+        interaction
+            .edit_response(
+                ctx,
+                EditInteractionResponse::new().content("LFG plugin has been setup"),
+            )
+            .await?;
 
         Ok(())
     }
@@ -195,39 +230,66 @@ impl LfgCommand {
     }
 
     pub fn register() -> CreateCommand {
+        let setup = CreateCommandOption::new(
+            CommandOptionType::SubCommand,
+            "setup",
+            "Setup the lfg plugin",
+        )
+        .add_sub_option(
+            CreateCommandOption::new(
+                CommandOptionType::Channel,
+                "channel",
+                "The channel to create the lfg threads in",
+            )
+            .required(true),
+        )
+        .add_sub_option(CreateCommandOption::new(
+            CommandOptionType::Role,
+            "role",
+            "The role to mention when a new lfg thread is created",
+        ));
+
+        let create = CreateCommandOption::new(
+            CommandOptionType::SubCommand,
+            "create",
+            "Create a new looking for group post",
+        )
+        .add_sub_option(
+            CreateCommandOption::new(
+                CommandOptionType::String,
+                "activity",
+                "The activity you are looking to do",
+            )
+            .required(true)
+            .set_autocomplete(true),
+        );
+
+        let join = CreateCommandOption::new(
+            CommandOptionType::SubCommand,
+            "join",
+            "Join a looking for group post",
+        )
+        .add_sub_option(
+            CreateCommandOption::new(CommandOptionType::Channel, "thread", "The LFG thread")
+                .required(true),
+        );
+
+        let timezone = CreateCommandOption::new(
+            CommandOptionType::SubCommand,
+            "timezone",
+            "Set your timezone",
+        )
+        .add_sub_option(
+            CreateCommandOption::new(CommandOptionType::String, "region", "Your region")
+                .required(true)
+                .set_autocomplete(true),
+        );
+
         CreateCommand::new("lfg")
             .description("Create a looking for group post")
-            .add_option(
-                CreateCommandOption::new(
-                    CommandOptionType::SubCommand,
-                    "create",
-                    "Create a new looking for group post",
-                )
-                .add_sub_option(
-                    CreateCommandOption::new(
-                        CommandOptionType::String,
-                        "activity",
-                        "The activity you are looking to do",
-                    )
-                    .required(true)
-                    .set_autocomplete(true),
-                ),
-            )
-            .add_option(
-                CreateCommandOption::new(
-                    CommandOptionType::SubCommand,
-                    "join",
-                    "Join a looking for group post",
-                )
-                .add_sub_option(
-                    CreateCommandOption::new(
-                        CommandOptionType::Channel,
-                        "thread",
-                        "The LFG thread",
-                    )
-                    .required(true),
-                ),
-            )
+            .add_option(setup)
+            .add_option(create)
+            .add_option(join)
             // .add_option(CreateCommandOption::new(
             //     CommandOptionType::SubCommand,
             //     "leave",
@@ -238,18 +300,7 @@ impl LfgCommand {
             //     "joined",
             //     "View all the posts you have joined",
             // ))
-            .add_option(
-                CreateCommandOption::new(
-                    CommandOptionType::SubCommand,
-                    "timezone",
-                    "Set your timezone",
-                )
-                .add_sub_option(
-                    CreateCommandOption::new(CommandOptionType::String, "region", "Your region")
-                        .required(true)
-                        .set_autocomplete(true),
-                ),
-            )
+            .add_option(timezone)
     }
 
     pub async fn autocomplete(ctx: &Context, interaction: &CommandInteraction) -> Result<()> {

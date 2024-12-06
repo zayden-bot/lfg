@@ -5,6 +5,8 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
+    GuildRequired,
+    MissingSetup,
     FireteamFull,
     PostNotFound,
     PermissionDenied { owner: UserId },
@@ -19,6 +21,10 @@ pub enum Error {
 impl ErrorResponse for Error {
     fn to_response(&self) -> String {
         match self {
+            Self::GuildRequired => String::from("Guild required to use this command."),
+            Self::MissingSetup => String::from(
+                "Missing setup. If you are the owner, please run `/lfg setup` to set up the bot.",
+            ),
             Self::FireteamFull => String::from("Unable to join. Fireteam is full."),
             Self::PostNotFound => String::from(
                 "Post not found, please message <@211486447369322506> if the issue persists.",

@@ -1,5 +1,6 @@
 mod components;
 mod error;
+mod lfg_guild_manager;
 mod lfg_post_manager;
 mod modals;
 mod slash_command;
@@ -8,6 +9,7 @@ pub mod timezone_manager;
 pub use components::{KickComponent, PostComponents, SettingsComponents};
 pub use error::Error;
 use error::Result;
+pub use lfg_guild_manager::{LfgGuildManager, LfgGuildRow};
 pub use lfg_post_manager::{LfgPostManager, LfgPostRow};
 pub use modals::{LfgCreateModal, LfgEditModal};
 use serenity::all::{
