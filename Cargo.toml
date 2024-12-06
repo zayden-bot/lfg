@@ -17,8 +17,7 @@ sqlx = { version = "*", default-features = false, features = [
     "chrono",
 ] }
 async-trait = { version = "*", default-features = false }
-
-[dependencies.serenity]
-version = "*"
-default-features = false
-features = ["model", "rustls_backend"]
+serenity = { version = "*", default-features = false, features = [
+    "model",
+    "rustls_backend",
+] }
