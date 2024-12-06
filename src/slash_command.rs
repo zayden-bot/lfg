@@ -107,7 +107,7 @@ impl LfgCommand {
             _ => unreachable!("Activity is required"),
         };
 
-        interaction.delete_response(ctx).await?;
+        interaction.delete_response(ctx).await.unwrap();
 
         let timezone = Manager::get(pool, interaction.user.id, &interaction.locale).await?;
         let now = timezone.from_utc_datetime(&Utc::now().naive_utc());
@@ -123,7 +123,8 @@ impl LfgCommand {
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Modal(modal))
-            .await?;
+            .await
+            .unwrap();
 
         Ok(())
     }
