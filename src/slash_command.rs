@@ -104,6 +104,8 @@ impl LfgCommand {
         pool: &Pool<Db>,
         options: HashMap<&str, &ResolvedValue<'_>>,
     ) -> Result<()> {
+        interaction.defer_ephemeral(ctx).await?;
+
         let guild_id = match interaction.guild_id {
             Some(guild_id) => guild_id,
             None => return Err(Error::GuildRequired),
