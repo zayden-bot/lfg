@@ -169,6 +169,8 @@ impl LfgCommand {
         pool: &Pool<Db>,
         options: HashMap<&str, &ResolvedValue<'_>>,
     ) -> Result<()> {
+        interaction.defer_ephemeral(ctx).await?;
+
         let thread_id = match options.get("channel") {
             Some(ResolvedValue::Channel(channel)) => channel.id,
             _ => unreachable!("Thread is required"),
@@ -211,6 +213,8 @@ impl LfgCommand {
         pool: &Pool<Db>,
         options: HashMap<&str, &ResolvedValue<'_>>,
     ) -> Result<()> {
+        interaction.defer_ephemeral(ctx).await?;
+
         let timezone = match options.get("region") {
             Some(ResolvedValue::String(region)) => *region,
             _ => unreachable!("Region is required"),
