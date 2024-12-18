@@ -14,7 +14,7 @@ use zayden_core::parse_options;
 
 use crate::modals::modal_components;
 use crate::timezone_manager::TimezoneManager;
-use crate::{join_post, Error, LfgGuildManager, LfgPostManager, Result};
+use crate::{join_post, leave_post, Error, LfgGuildManager, LfgPostManager, Result};
 
 lazy_static! {
     pub static ref ACTIVITY_MAP: HashMap<&'static str, u8> = {
@@ -89,7 +89,7 @@ impl LfgCommand {
             "setup" => Self::setup::<Db, GuildManager>(ctx, interaction, pool, options).await?,
             "create" => Self::create::<Db, TzManager>(ctx, interaction, pool, options).await?,
             "join" => Self::join::<Db, PostManager>(ctx, interaction, pool, options).await?,
-            "leave" => Self::leave(ctx, interaction, options).await,
+            "leave" => Self::leave::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "joined" => Self::joined(ctx, interaction).await,
             "timezone" => Self::timezone::<Db, TzManager>(ctx, interaction, pool, options).await?,
             _ => unreachable!("Invalid subcommand"),
@@ -195,12 +195,36 @@ impl LfgCommand {
         Ok(())
     }
 
-    async fn leave(
+    async fn leave<Db: Database, Manager: LfgPostManager<Db>>(
         ctx: &Context,
         interaction: &CommandInteraction,
+        pool: &Pool<Db>,
         options: HashMap<&str, &ResolvedValue<'_>>,
-    ) {
-        todo!()
+    ) -> Result<()> {
+        interaction.defer_ephemeral(ctx).await?;
+
+        let thread_id = match options.get("channel") {
+            Some(ResolvedValue::Channel(channel)) => channel.id,
+            _ => unreachable!("Thread is required"),
+        };
+
+        let post = Manager::get(pool, thread_id.get()).await?;
+
+        let embed = leave_post::<Db, Manager>(ctx, pool, post, interaction.user.id).await?;
+
+        thread_id
+            .edit_message(ctx, thread_id.get(), EditMessage::new().embed(embed))
+            .await?;
+
+        interaction
+            .edit_response(
+                ctx,
+                EditInteractionResponse::new()
+                    .content(format!("You have left {}", thread_id.mention())),
+            )
+            .await?;
+
+        Ok(())
     }
 
     async fn joined(ctx: &Context, interaction: &CommandInteraction) {
@@ -280,6 +304,16 @@ impl LfgCommand {
                 .required(true),
         );
 
+        let leave = CreateCommandOption::new(
+            CommandOptionType::SubCommand,
+            "leave",
+            "Leave a looking for group post",
+        )
+        .add_sub_option(
+            CreateCommandOption::new(CommandOptionType::Channel, "thread", "The LFG thread")
+                .required(true),
+        );
+
         let timezone = CreateCommandOption::new(
             CommandOptionType::SubCommand,
             "timezone",
@@ -296,11 +330,7 @@ impl LfgCommand {
             .add_option(setup)
             .add_option(create)
             .add_option(join)
-            // .add_option(CreateCommandOption::new(
-            //     CommandOptionType::SubCommand,
-            //     "leave",
-            //     "Leave a looking for group post",
-            // ))
+            .add_option(leave)
             // .add_option(CreateCommandOption::new(
             //     CommandOptionType::SubCommand,
             //     "joined",

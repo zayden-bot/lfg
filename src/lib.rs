@@ -91,3 +91,18 @@ async fn join_post<Db: Database, Manager: LfgPostManager<Db>>(
 
     Ok(embed)
 }
+
+async fn leave_post<Db: Database, Manager: LfgPostManager<Db>>(
+    ctx: &Context,
+    pool: &Pool<Db>,
+    mut post: LfgPostRow,
+    user_id: impl Into<UserId>,
+) -> Result<CreateEmbed> {
+    post.leave(user_id);
+
+    let embed = create_lfg_embed(&post, &post.owner(ctx).await?.name);
+
+    post.save::<Db, Manager>(pool).await?;
+
+    Ok(embed)
+}
