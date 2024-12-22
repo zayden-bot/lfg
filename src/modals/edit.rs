@@ -1,5 +1,7 @@
 use chrono::{NaiveDateTime, TimeZone};
-use serenity::all::{Context, EditMessage, EditThread, ModalInteraction};
+use serenity::all::{
+    Context, CreateInteractionResponse, EditMessage, EditThread, ModalInteraction,
+};
 use sqlx::Pool;
 use zayden_core::parse_modal_data;
 
@@ -74,6 +76,10 @@ impl LfgEditModal {
             .await?;
 
         post.save::<Db, PostManager>(pool).await?;
+
+        interaction
+            .create_response(ctx, CreateInteractionResponse::Acknowledge)
+            .await?;
 
         Ok(())
     }
