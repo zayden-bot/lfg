@@ -1,6 +1,7 @@
 use chrono::{NaiveDateTime, TimeZone};
 use serenity::all::{
-    AutoArchiveDuration, Context, CreateForumPost, CreateMessage, Mentionable, ModalInteraction,
+    AutoArchiveDuration, Context, CreateForumPost, CreateInteractionResponse, CreateMessage,
+    Mentionable, ModalInteraction,
 };
 use sqlx::Pool;
 use zayden_core::parse_modal_data;
@@ -96,6 +97,10 @@ impl LfgCreateModal {
         post.id = thread.id.get() as i64;
 
         post.save::<Db, PostManager>(pool).await?;
+
+        interaction
+            .create_response(ctx, CreateInteractionResponse::Acknowledge)
+            .await?;
 
         Ok(())
     }
