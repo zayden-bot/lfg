@@ -5,7 +5,7 @@ use serenity::all::{
 use sqlx::Pool;
 use zayden_core::parse_modal_data;
 
-use crate::{create_lfg_embed, LfgPostManager, LfgPostRow, Result, TimezoneManager};
+use crate::{create_lfg_embed, LfgPostManager, Result, TimezoneManager};
 
 pub struct LfgEditModal;
 
@@ -49,14 +49,12 @@ impl LfgEditModal {
 
         let channel_id = interaction.channel_id;
 
-        let post = LfgPostRow::new(
-            channel_id.get(),
-            interaction.user.id,
-            activity,
-            start_time,
-            description,
-            fireteam_size,
-        );
+        let mut post = PostManager::get(pool, interaction.message.as_ref().unwrap().id).await?;
+        post.activity = activity.to_string();
+        post.fireteam_size = fireteam_size as i16;
+        post.description = description.to_string();
+        post.timestamp = start_time.naive_utc();
+        post.timezone = timezone.name().to_string();
 
         let embed = create_lfg_embed(&post, &interaction.user.name);
 
