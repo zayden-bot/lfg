@@ -1,3 +1,4 @@
+mod activities;
 mod components;
 mod error;
 mod lfg_guild_manager;
@@ -6,6 +7,7 @@ mod modals;
 mod slash_command;
 pub mod timezone_manager;
 
+pub use activities::{Activity, ActivityCategory, ACTIVITIES};
 pub use components::{KickComponent, PostComponents, SettingsComponents};
 pub use error::Error;
 use error::Result;

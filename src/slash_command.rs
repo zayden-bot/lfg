@@ -3,65 +3,18 @@ use std::str::FromStr;
 
 use chrono::{TimeZone, Utc};
 use chrono_tz::Tz;
-use lazy_static::lazy_static;
 use serenity::all::{
     AutocompleteChoice, CommandInteraction, CommandOptionType, Context, CreateAutocompleteResponse,
-    CreateCommand, CreateCommandOption, CreateInteractionResponse, CreateModal,
-    EditInteractionResponse, EditMessage, Mentionable, ResolvedValue,
+    CreateCommand, CreateCommandOption, CreateInteractionResponse, CreateModal, CreateSelectMenu,
+    CreateSelectMenuKind, CreateSelectMenuOption, EditInteractionResponse, EditMessage,
+    Mentionable, ResolvedValue,
 };
 use sqlx::{Database, Pool};
 use zayden_core::parse_options;
 
 use crate::modals::modal_components;
 use crate::timezone_manager::TimezoneManager;
-use crate::{join_post, leave_post, Error, LfgGuildManager, LfgPostManager, Result};
-
-lazy_static! {
-    pub static ref ACTIVITY_MAP: HashMap<&'static str, u8> = {
-        let mut m = HashMap::new();
-        m.insert("Salvation's Edge", 6);
-        m.insert("Crota's End", 6);
-        m.insert("Root of Nightmares", 6);
-        m.insert("King's Fall", 6);
-        m.insert("Vow of the Disciple", 6);
-        m.insert("Vault of Glass", 6);
-        m.insert("Deep Stone Crypt", 6);
-        m.insert("Garden of Salvation", 6);
-        m.insert("Last Wish", 6);
-
-        m.insert("Vesper's Host", 3);
-        m.insert("Warlord's Ruin", 3);
-        m.insert("Ghosts of the Deep", 3);
-        m.insert("Spire of the Watcher", 3);
-        m.insert("Duality", 3);
-        m.insert("Grasp of Avarice", 3);
-        m.insert("Prophecy", 3);
-        m.insert("Pit of Heresy", 3);
-        m.insert("Shattered Throne", 3);
-
-        m.insert("Duel Destiny", 2);
-        m.insert("The Whisper", 3);
-        m.insert("Zero Hour", 3);
-        m.insert("Harbinger", 3);
-        m.insert("Presage", 3);
-        m.insert("Vox Obscura", 3);
-        m.insert("Operation: Seraph's Shield", 3);
-        m.insert("Node.Ovrd.Avalon", 3);
-        m.insert("Starcrossed", 3);
-
-        m.insert("Vanguard Ops", 3);
-        m.insert("Nightfall", 3);
-        m.insert("Grandmaster", 3);
-        m.insert("Onslaught", 3);
-
-        m.insert("Crucible", 6);
-        m.insert("Competitive", 6);
-        m.insert("Iron Banner", 6);
-        m.insert("Trials of Osiris", 3);
-
-        m
-    };
-}
+use crate::{join_post, leave_post, Error, LfgGuildManager, LfgPostManager, Result, ACTIVITIES};
 
 pub struct LfgCommand;
 
@@ -88,6 +41,9 @@ impl LfgCommand {
         match command.name {
             "setup" => Self::setup::<Db, GuildManager>(ctx, interaction, pool, options).await?,
             "create" => Self::create::<Db, TzManager>(ctx, interaction, pool, options).await?,
+            "tags" => Self::tags::<Db, PostManager>(ctx, interaction, pool)
+                .await
+                .unwrap(),
             "join" => Self::join::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "leave" => Self::leave::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "joined" => Self::joined(ctx, interaction).await,
@@ -147,8 +103,8 @@ impl LfgCommand {
         let timezone = Manager::get(pool, interaction.user.id, &interaction.locale).await?;
         let now = timezone.from_utc_datetime(&Utc::now().naive_utc());
 
-        let fireteam_size = match ACTIVITY_MAP.get(activity) {
-            Some(fireteam_size) => *fireteam_size,
+        let fireteam_size = match ACTIVITIES.iter().find(|a| a.name == activity) {
+            Some(activity) => activity.fireteam_size,
             None => 3,
         };
 
@@ -159,6 +115,58 @@ impl LfgCommand {
         interaction
             .create_response(ctx, CreateInteractionResponse::Modal(modal))
             .await?;
+
+        Ok(())
+    }
+
+    async fn tags<Db: Database, Manager: LfgPostManager<Db>>(
+        ctx: &Context,
+        interaction: &CommandInteraction,
+        pool: &Pool<Db>,
+    ) -> Result<()> {
+        interaction.defer_ephemeral(ctx).await.unwrap();
+
+        let post = Manager::get(pool, interaction.channel_id.get())
+            .await
+            .unwrap();
+
+        if post.owner_id() != interaction.user.id {
+            return Err(Error::PermissionDenied {
+                owner: post.owner_id(),
+            });
+        }
+
+        let all_tags = interaction
+            .channel_id
+            .to_channel(ctx)
+            .await
+            .unwrap()
+            .guild()
+            .unwrap()
+            .parent_id
+            .unwrap()
+            .to_channel(ctx)
+            .await
+            .unwrap()
+            .guild()
+            .unwrap()
+            .available_tags;
+
+        let options = all_tags
+            .into_iter()
+            .map(|tag| CreateSelectMenuOption::new(tag.name, tag.id.to_string()))
+            .collect::<Vec<_>>();
+
+        interaction
+            .edit_response(
+                ctx,
+                EditInteractionResponse::new().select_menu(CreateSelectMenu::new(
+                    "lfg_tags",
+                    CreateSelectMenuKind::String { options },
+                )),
+            )
+            .await
+            .unwrap();
 
         Ok(())
     }
@@ -294,6 +302,12 @@ impl LfgCommand {
             .set_autocomplete(true),
         );
 
+        let tags = CreateCommandOption::new(
+            CommandOptionType::SubCommand,
+            "tags",
+            "Edit the tags for the lfg post",
+        );
+
         let join = CreateCommandOption::new(
             CommandOptionType::SubCommand,
             "join",
@@ -329,6 +343,7 @@ impl LfgCommand {
             .description("Create a looking for group post")
             .add_option(setup)
             .add_option(create)
+            .add_option(tags)
             .add_option(join)
             .add_option(leave)
             // .add_option(CreateCommandOption::new(
@@ -346,17 +361,16 @@ impl LfgCommand {
             "create" => {
                 let option = interaction.data.autocomplete().unwrap();
 
-                ACTIVITY_MAP
-                    .keys()
+                ACTIVITIES
+                    .iter()
                     .filter(|activity| {
                         activity
+                            .name
                             .to_lowercase()
                             .starts_with(&option.value.to_lowercase())
                     })
                     .take(25)
-                    .map(|activity| {
-                        AutocompleteChoice::new(activity.to_string(), activity.to_string())
-                    })
+                    .map(|activity| AutocompleteChoice::new(activity.name, activity.name))
                     .collect::<Vec<_>>()
             }
 
