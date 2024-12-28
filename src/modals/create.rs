@@ -6,7 +6,9 @@ use serenity::all::{
 use sqlx::Pool;
 use zayden_core::parse_modal_data;
 
-use crate::{create_lfg_embed, create_main_row, Error, LfgPostManager, LfgPostRow, Result};
+use crate::{
+    create_lfg_embed, create_main_row, Error, LfgPostManager, LfgPostRow, Result, ACTIVITIES,
+};
 use crate::{LfgGuildManager, TimezoneManager};
 
 pub struct LfgCreateModal;
@@ -69,23 +71,41 @@ impl LfgCreateModal {
         let row = create_main_row();
 
         let lfg_guild = GuildManager::get(pool, guild_id).await?;
-        let channel_id = match lfg_guild {
-            Some(guild) => guild.channel_id(),
+        let channel = match lfg_guild {
+            Some(guild) => guild
+                .channel_id()
+                .to_channel(ctx)
+                .await
+                .unwrap()
+                .guild()
+                .unwrap(),
             None => return Err(Error::MissingSetup),
         };
 
-        let thread = channel_id
+        let tags = channel
+            .available_tags
+            .iter()
+            .filter(|tag| {
+                tag.name.to_lowercase()
+                    == ACTIVITIES
+                        .iter()
+                        .find(|a| a.name == activity)
+                        .map(|a| a.category.to_string())
+                        .unwrap_or_default()
+            })
+            .map(|tag| tag.id);
+
+        let thread = channel
             .create_forum_post(
                 ctx,
                 CreateForumPost::new(
                     format!("{} - {}", activity, start_time.format("%d %b %H:%M %Z")),
                     CreateMessage::new().embed(embed).components(vec![row]),
                 )
-                .auto_archive_duration(AutoArchiveDuration::OneWeek),
+                .auto_archive_duration(AutoArchiveDuration::OneWeek)
+                .set_applied_tags(tags),
             )
             .await?;
-
-        // TODO: Add thread tags based on description
 
         thread
             .send_message(
