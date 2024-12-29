@@ -42,7 +42,7 @@ impl LfgCommand {
         match command.name {
             "setup" => Self::setup::<Db, GuildManager>(ctx, interaction, pool, options).await?,
             "create" => Self::create::<Db, TzManager>(ctx, interaction, pool, options).await?,
-            "tags" => Self::tags::<Db, PostManager>(ctx, interaction, pool).await,
+            "tags" => Self::tags::<Db, PostManager>(ctx, interaction, pool, options).await,
             "join" => Self::join::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "leave" => Self::leave::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "joined" => Self::joined(ctx, interaction).await,
@@ -122,9 +122,9 @@ impl LfgCommand {
         ctx: &Context,
         interaction: &CommandInteraction,
         pool: &Pool<Db>,
+        options: HashMap<&str, &ResolvedValue<'_>>,
     ) {
-        let command = &interaction.data.options();
-        println!("{:?}", command);
+        println!("{:?}", options);
     }
 
     async fn add_tags<Db: Database, Manager: LfgPostManager<Db>>(
