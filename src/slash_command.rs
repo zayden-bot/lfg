@@ -7,7 +7,7 @@ use serenity::all::{
     AutocompleteChoice, CommandInteraction, CommandOptionType, Context, CreateAutocompleteResponse,
     CreateCommand, CreateCommandOption, CreateInteractionResponse, CreateModal, CreateSelectMenu,
     CreateSelectMenuKind, CreateSelectMenuOption, EditInteractionResponse, EditMessage,
-    Mentionable, ResolvedValue,
+    GuildChannel, Mentionable, ResolvedValue,
 };
 use sqlx::{Database, Pool};
 use zayden_core::parse_options;
@@ -42,7 +42,7 @@ impl LfgCommand {
         match command.name {
             "setup" => Self::setup::<Db, GuildManager>(ctx, interaction, pool, options).await?,
             "create" => Self::create::<Db, TzManager>(ctx, interaction, pool, options).await?,
-            "tags" => Self::tags::<Db, PostManager>(ctx, interaction, pool, options).await,
+            "tags" => Self::tags::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "join" => Self::join::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "leave" => Self::leave::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "joined" => Self::joined(ctx, interaction).await,
@@ -123,14 +123,6 @@ impl LfgCommand {
         interaction: &CommandInteraction,
         pool: &Pool<Db>,
         options: HashMap<&str, &ResolvedValue<'_>>,
-    ) {
-        println!("{:?}", options);
-    }
-
-    async fn add_tags<Db: Database, Manager: LfgPostManager<Db>>(
-        ctx: &Context,
-        interaction: &CommandInteraction,
-        pool: &Pool<Db>,
     ) -> Result<()> {
         interaction.defer_ephemeral(ctx).await.unwrap();
 
@@ -161,6 +153,25 @@ impl LfgCommand {
             .guild()
             .unwrap();
 
+        if options.contains_key("add") {
+            Self::add_tags(ctx, interaction, forum_channel, thread_channel)
+                .await
+                .unwrap();
+        } else if options.contains_key("remove") {
+            Self::remove_tags(ctx, interaction, forum_channel, thread_channel)
+                .await
+                .unwrap();
+        }
+
+        Ok(())
+    }
+
+    async fn add_tags(
+        ctx: &Context,
+        interaction: &CommandInteraction,
+        forum_channel: GuildChannel,
+        thread_channel: GuildChannel,
+    ) -> Result<()> {
         let options = forum_channel
             .available_tags
             .into_iter()
@@ -184,40 +195,12 @@ impl LfgCommand {
         Ok(())
     }
 
-    async fn remove_tags<Db: Database, Manager: LfgPostManager<Db>>(
+    async fn remove_tags(
         ctx: &Context,
         interaction: &CommandInteraction,
-        pool: &Pool<Db>,
+        forum_channel: GuildChannel,
+        thread_channel: GuildChannel,
     ) -> Result<()> {
-        interaction.defer_ephemeral(ctx).await.unwrap();
-
-        let post = Manager::get(pool, interaction.channel_id.get())
-            .await
-            .unwrap();
-
-        if post.owner_id() != interaction.user.id {
-            return Err(Error::PermissionDenied {
-                owner: post.owner_id(),
-            });
-        }
-
-        let thread_channel = interaction
-            .channel_id
-            .to_channel(ctx)
-            .await
-            .unwrap()
-            .guild()
-            .unwrap();
-
-        let forum_channel = thread_channel
-            .parent_id
-            .unwrap()
-            .to_channel(ctx)
-            .await
-            .unwrap()
-            .guild()
-            .unwrap();
-
         let options = forum_channel
             .available_tags
             .into_iter()
