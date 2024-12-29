@@ -8,7 +8,7 @@ mod slash_command;
 pub mod timezone_manager;
 
 pub use activities::{Activity, ActivityCategory, ACTIVITIES};
-pub use components::{KickComponent, PostComponents, SettingsComponents};
+pub use components::{KickComponent, PostComponents, SettingsComponents, TagsComponent};
 pub use error::Error;
 use error::Result;
 pub use lfg_guild_manager::{LfgGuildManager, LfgGuildRow};
