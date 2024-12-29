@@ -185,7 +185,7 @@ impl LfgCommand {
             .edit_response(
                 ctx,
                 EditInteractionResponse::new().select_menu(
-                    CreateSelectMenu::new("lfg_tags", CreateSelectMenuKind::String { options })
+                    CreateSelectMenu::new("lfg_tags_add", CreateSelectMenuKind::String { options })
                         .max_values(max_values),
                 ),
             )
@@ -214,8 +214,11 @@ impl LfgCommand {
             .edit_response(
                 ctx,
                 EditInteractionResponse::new().select_menu(
-                    CreateSelectMenu::new("lfg_tags", CreateSelectMenuKind::String { options })
-                        .max_values(max_values),
+                    CreateSelectMenu::new(
+                        "lfg_tags_remove",
+                        CreateSelectMenuKind::String { options },
+                    )
+                    .max_values(max_values),
                 ),
             )
             .await
