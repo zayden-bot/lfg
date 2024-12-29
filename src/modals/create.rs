@@ -92,6 +92,7 @@ impl LfgCreateModal {
                         .find(|a| a.name == activity)
                         .map(|a| a.category.to_string())
                         .unwrap_or_default()
+                        .to_lowercase()
             })
             .map(|tag| tag.id);
 

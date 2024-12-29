@@ -41,9 +41,7 @@ impl LfgCommand {
         match command.name {
             "setup" => Self::setup::<Db, GuildManager>(ctx, interaction, pool, options).await?,
             "create" => Self::create::<Db, TzManager>(ctx, interaction, pool, options).await?,
-            "tags" => Self::tags::<Db, PostManager>(ctx, interaction, pool)
-                .await
-                .unwrap(),
+            "tags" => Self::tags::<Db, PostManager>(ctx, interaction, pool).await?,
             "join" => Self::join::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "leave" => Self::leave::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "joined" => Self::joined(ctx, interaction).await,
@@ -137,11 +135,8 @@ impl LfgCommand {
         }
 
         let all_tags = interaction
-            .channel_id
-            .to_channel(ctx)
-            .await
-            .unwrap()
-            .guild()
+            .channel
+            .as_ref()
             .unwrap()
             .parent_id
             .unwrap()
@@ -157,13 +152,15 @@ impl LfgCommand {
             .map(|tag| CreateSelectMenuOption::new(tag.name, tag.id.to_string()))
             .collect::<Vec<_>>();
 
+        let max_values = options.len() as u8;
+
         interaction
             .edit_response(
                 ctx,
-                EditInteractionResponse::new().select_menu(CreateSelectMenu::new(
-                    "lfg_tags",
-                    CreateSelectMenuKind::String { options },
-                )),
+                EditInteractionResponse::new().select_menu(
+                    CreateSelectMenu::new("lfg_tags", CreateSelectMenuKind::String { options })
+                        .max_values(max_values),
+                ),
             )
             .await
             .unwrap();
