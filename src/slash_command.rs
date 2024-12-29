@@ -41,7 +41,7 @@ impl LfgCommand {
         match command.name {
             "setup" => Self::setup::<Db, GuildManager>(ctx, interaction, pool, options).await?,
             "create" => Self::create::<Db, TzManager>(ctx, interaction, pool, options).await?,
-            "tags" => Self::tags::<Db, PostManager>(ctx, interaction, pool).await?,
+            "tags" => Self::tags::<Db, PostManager>(ctx, interaction, pool).await,
             "join" => Self::join::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "leave" => Self::leave::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "joined" => Self::joined(ctx, interaction).await,
@@ -121,6 +121,15 @@ impl LfgCommand {
         ctx: &Context,
         interaction: &CommandInteraction,
         pool: &Pool<Db>,
+    ) {
+        let command = &interaction.data.options();
+        println!("{:?}", command);
+    }
+
+    async fn add_tags<Db: Database, Manager: LfgPostManager<Db>>(
+        ctx: &Context,
+        interaction: &CommandInteraction,
+        pool: &Pool<Db>,
     ) -> Result<()> {
         interaction.defer_ephemeral(ctx).await.unwrap();
 
@@ -134,21 +143,84 @@ impl LfgCommand {
             });
         }
 
-        let all_tags = interaction
-            .channel
-            .as_ref()
+        let thread_channel = interaction
+            .channel_id
+            .to_channel(ctx)
+            .await
             .unwrap()
+            .guild()
+            .unwrap();
+
+        let forum_channel = thread_channel
             .parent_id
             .unwrap()
             .to_channel(ctx)
             .await
             .unwrap()
             .guild()
-            .unwrap()
-            .available_tags;
+            .unwrap();
 
-        let options = all_tags
+        let options = forum_channel
+            .available_tags
             .into_iter()
+            .filter(|tag| !thread_channel.applied_tags.contains(&tag.id))
+            .map(|tag| CreateSelectMenuOption::new(tag.name, tag.id.to_string()))
+            .collect::<Vec<_>>();
+
+        let max_values = options.len() as u8;
+
+        interaction
+            .edit_response(
+                ctx,
+                EditInteractionResponse::new().select_menu(
+                    CreateSelectMenu::new("lfg_tags", CreateSelectMenuKind::String { options })
+                        .max_values(max_values),
+                ),
+            )
+            .await
+            .unwrap();
+
+        Ok(())
+    }
+
+    async fn remove_tags<Db: Database, Manager: LfgPostManager<Db>>(
+        ctx: &Context,
+        interaction: &CommandInteraction,
+        pool: &Pool<Db>,
+    ) -> Result<()> {
+        interaction.defer_ephemeral(ctx).await.unwrap();
+
+        let post = Manager::get(pool, interaction.channel_id.get())
+            .await
+            .unwrap();
+
+        if post.owner_id() != interaction.user.id {
+            return Err(Error::PermissionDenied {
+                owner: post.owner_id(),
+            });
+        }
+
+        let thread_channel = interaction
+            .channel_id
+            .to_channel(ctx)
+            .await
+            .unwrap()
+            .guild()
+            .unwrap();
+
+        let forum_channel = thread_channel
+            .parent_id
+            .unwrap()
+            .to_channel(ctx)
+            .await
+            .unwrap()
+            .guild()
+            .unwrap();
+
+        let options = forum_channel
+            .available_tags
+            .into_iter()
+            .filter(|tag| thread_channel.applied_tags.contains(&tag.id))
             .map(|tag| CreateSelectMenuOption::new(tag.name, tag.id.to_string()))
             .collect::<Vec<_>>();
 
@@ -303,7 +375,17 @@ impl LfgCommand {
             CommandOptionType::SubCommand,
             "tags",
             "Edit the tags for the lfg post",
-        );
+        )
+        .add_sub_option(CreateCommandOption::new(
+            CommandOptionType::SubCommand,
+            "add",
+            "Add tags to the lfg post",
+        ))
+        .add_sub_option(CreateCommandOption::new(
+            CommandOptionType::SubCommand,
+            "remove",
+            "Remove tags from the lfg post",
+        ));
 
         let join = CreateCommandOption::new(
             CommandOptionType::SubCommand,
