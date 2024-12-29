@@ -372,7 +372,7 @@ impl LfgCommand {
         );
 
         let tags = CreateCommandOption::new(
-            CommandOptionType::SubCommand,
+            CommandOptionType::SubCommandGroup,
             "tags",
             "Edit the tags for the lfg post",
         )
