@@ -34,6 +34,7 @@ impl LfgCommand {
 
         let options = match &command.value {
             ResolvedValue::SubCommand(options) => options,
+            ResolvedValue::SubCommandGroup(options) => options,
             _ => unreachable!("Subcommand is required"),
         };
         let options = parse_options(options);
