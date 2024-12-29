@@ -34,7 +34,7 @@ impl TagsComponent {
             .collect::<HashSet<_>>();
 
         for tag_id in tag_ids {
-            if new_tags.insert(tag_id) {
+            if !new_tags.insert(tag_id) {
                 new_tags.remove(&tag_id);
             }
         }
