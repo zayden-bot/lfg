@@ -40,7 +40,7 @@ impl LfgCreateModal {
             .expect("Fireteam size should exist as it's required")
             .parse::<u8>()?;
         let description = match inputs.remove("description") {
-            Some(description) => description,
+            Some(description) => &description.chars().take(1024).collect::<String>(),
             None => activity,
         };
         let start_time_str = inputs
