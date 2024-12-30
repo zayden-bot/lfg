@@ -89,7 +89,7 @@ impl LfgCreateModal {
                 tag.name.to_lowercase()
                     == ACTIVITIES
                         .iter()
-                        .find(|a| activity.contains(a.name))
+                        .find(|a| activity.to_lowercase().contains(&a.name.to_lowercase()))
                         .map(|a| a.category.to_string())
                         .unwrap_or_default()
                         .to_lowercase()
