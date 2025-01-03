@@ -49,12 +49,16 @@ impl LfgCreateModal {
 
         let timezone = TzManager::get(pool, interaction.user.id, &interaction.locale).await?;
 
-        let start_time = {
-            let naive_dt = NaiveDateTime::parse_from_str(start_time_str, "%Y-%m-%d %H:%M")?;
-            timezone
+        let start_time = match NaiveDateTime::parse_from_str(start_time_str, "%Y-%m-%d %H:%M") {
+            Ok(naive_dt) => timezone
                 .from_local_datetime(&naive_dt)
                 .single()
-                .expect("Invalid date time")
+                .expect("Invalid date time"),
+            Err(_) => {
+                return Err(Error::InvalidDateTime {
+                    format: "YYYY-MM-DD HH:MM".to_string(),
+                });
+            }
         };
 
         let mut post = LfgPostRow::new(

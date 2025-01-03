@@ -10,6 +10,7 @@ pub enum Error {
     FireteamFull,
     PostNotFound,
     PermissionDenied { owner: UserId },
+    InvalidDateTime { format: String },
 
     ParseInt(std::num::ParseIntError),
     Serenity(serenity::Error),
@@ -33,6 +34,9 @@ impl ErrorResponse for Error {
                 "Permission denied. Only the owner ({}) can use this action.",
                 owner.mention()
             ),
+            Self::InvalidDateTime { format } => {
+                format!("Invalid date time. Expected format: {}", format)
+            }
             _ => String::new(),
         }
     }
