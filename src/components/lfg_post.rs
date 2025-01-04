@@ -18,18 +18,11 @@ impl PostComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let post = Manager::get(pool, &interaction.message.id).await?;
+        let post = Manager::get(pool, &interaction.message.id).await.unwrap();
 
-        let embed = join_post::<Db, Manager>(ctx, pool, post, interaction.user.id).await?;
-
-        interaction
-            .create_response(
-                ctx,
-                CreateInteractionResponse::UpdateMessage(
-                    CreateInteractionResponseMessage::new().embed(embed),
-                ),
-            )
-            .await?;
+        let embed = join_post::<Db, Manager>(ctx, pool, post, interaction.user.id)
+            .await
+            .unwrap();
 
         interaction
             .channel_id
@@ -40,7 +33,18 @@ impl PostComponents {
                     interaction.user.mention()
                 )),
             )
-            .await?;
+            .await
+            .unwrap();
+
+        interaction
+            .create_response(
+                ctx,
+                CreateInteractionResponse::UpdateMessage(
+                    CreateInteractionResponseMessage::new().embed(embed),
+                ),
+            )
+            .await
+            .unwrap();
 
         Ok(())
     }
@@ -54,13 +58,13 @@ impl PostComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let mut post = Manager::get(pool, interaction.message.id).await?;
+        let mut post = Manager::get(pool, interaction.message.id).await.unwrap();
 
         post.leave(interaction.user.id);
 
-        let embed = create_lfg_embed(&post, &post.owner(ctx).await?.name);
+        let embed = create_lfg_embed(&post, &post.owner(ctx).await.unwrap().name);
 
-        post.save::<Db, Manager>(pool).await?;
+        post.save::<Db, Manager>(pool).await.unwrap();
 
         interaction
             .create_response(
@@ -69,7 +73,8 @@ impl PostComponents {
                     CreateInteractionResponseMessage::new().embed(embed),
                 ),
             )
-            .await?;
+            .await
+            .unwrap();
 
         interaction
             .channel_id
@@ -78,7 +83,8 @@ impl PostComponents {
                 CreateMessage::new()
                     .content(format!("{} left the fireteam", interaction.user.mention())),
             )
-            .await?;
+            .await
+            .unwrap();
 
         Ok(())
     }
@@ -92,22 +98,13 @@ impl PostComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let mut post = Manager::get(pool, interaction.message.id).await?;
+        let mut post = Manager::get(pool, interaction.message.id).await.unwrap();
 
         post.join_alt(interaction.user.id);
 
-        let embed = create_lfg_embed(&post, &post.owner(ctx).await?.name);
+        let embed = create_lfg_embed(&post, &post.owner(ctx).await.unwrap().name);
 
-        post.save::<Db, Manager>(pool).await?;
-
-        interaction
-            .create_response(
-                ctx,
-                CreateInteractionResponse::UpdateMessage(
-                    CreateInteractionResponseMessage::new().embed(embed),
-                ),
-            )
-            .await?;
+        post.save::<Db, Manager>(pool).await.unwrap();
 
         interaction
             .channel_id
@@ -118,7 +115,18 @@ impl PostComponents {
                     interaction.user.mention()
                 )),
             )
-            .await?;
+            .await
+            .unwrap();
+
+        interaction
+            .create_response(
+                ctx,
+                CreateInteractionResponse::UpdateMessage(
+                    CreateInteractionResponseMessage::new().embed(embed),
+                ),
+            )
+            .await
+            .unwrap();
 
         Ok(())
     }
@@ -132,7 +140,7 @@ impl PostComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let post = Manager::get(pool, interaction.message.id).await?;
+        let post = Manager::get(pool, interaction.message.id).await.unwrap();
 
         if interaction.user.id != post.owner_id() {
             return Err(Error::PermissionDenied {
@@ -164,7 +172,8 @@ impl PostComponents {
                         .components(vec![main_row, settings_row_1]),
                 ),
             )
-            .await?;
+            .await
+            .unwrap();
 
         Ok(())
     }
