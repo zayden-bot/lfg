@@ -1,6 +1,6 @@
 use serenity::all::{
     ButtonStyle, ComponentInteraction, Context, CreateActionRow, CreateButton,
-    CreateInteractionResponse, CreateInteractionResponseMessage,
+    CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, Mentionable,
 };
 use sqlx::Pool;
 
@@ -28,6 +28,17 @@ impl PostComponents {
                 CreateInteractionResponse::UpdateMessage(
                     CreateInteractionResponseMessage::new().embed(embed),
                 ),
+            )
+            .await?;
+
+        interaction
+            .channel_id
+            .send_message(
+                ctx,
+                CreateMessage::new().content(format!(
+                    "{} joined the fireteam",
+                    interaction.user.mention()
+                )),
             )
             .await?;
 
@@ -60,6 +71,15 @@ impl PostComponents {
             )
             .await?;
 
+        interaction
+            .channel_id
+            .send_message(
+                ctx,
+                CreateMessage::new()
+                    .content(format!("{} left the fireteam", interaction.user.mention())),
+            )
+            .await?;
+
         Ok(())
     }
 
@@ -86,6 +106,17 @@ impl PostComponents {
                 CreateInteractionResponse::UpdateMessage(
                     CreateInteractionResponseMessage::new().embed(embed),
                 ),
+            )
+            .await?;
+
+        interaction
+            .channel_id
+            .send_message(
+                ctx,
+                CreateMessage::new().content(format!(
+                    "{} joined as an alternative",
+                    interaction.user.mention()
+                )),
             )
             .await?;
 
