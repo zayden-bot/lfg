@@ -20,9 +20,7 @@ impl PostComponents {
     {
         let post = Manager::get(pool, &interaction.message.id).await.unwrap();
 
-        let embed = join_post::<Db, Manager>(ctx, pool, post, interaction.user.id)
-            .await
-            .unwrap();
+        let embed = join_post::<Db, Manager>(ctx, pool, post, interaction.user.id).await?;
 
         interaction
             .channel_id
