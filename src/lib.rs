@@ -87,9 +87,9 @@ async fn join_post<Db: Database, Manager: LfgPostManager<Db>>(
 
     post.join(user_id);
 
-    let embed = create_lfg_embed(&post, &post.owner(ctx).await?.name);
+    let embed = create_lfg_embed(&post, &post.owner(ctx).await.unwrap().name);
 
-    post.save::<Db, Manager>(pool).await?;
+    post.save::<Db, Manager>(pool).await.unwrap();
 
     Ok(embed)
 }
@@ -102,9 +102,9 @@ async fn leave_post<Db: Database, Manager: LfgPostManager<Db>>(
 ) -> Result<CreateEmbed> {
     post.leave(user_id);
 
-    let embed = create_lfg_embed(&post, &post.owner(ctx).await?.name);
+    let embed = create_lfg_embed(&post, &post.owner(ctx).await.unwrap().name);
 
-    post.save::<Db, Manager>(pool).await?;
+    post.save::<Db, Manager>(pool).await.unwrap();
 
     Ok(embed)
 }
