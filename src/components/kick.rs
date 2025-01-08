@@ -22,7 +22,9 @@ impl KickComponent {
             _ => unreachable!("User is required"),
         };
 
-        let mut post = Manager::get(pool, interaction.channel_id.get()).await?;
+        let mut post = Manager::get(pool, interaction.channel_id.get())
+            .await
+            .unwrap();
 
         if post.kick(user) {
             let embed = create_lfg_embed(&post, &interaction.user.name);
@@ -30,13 +32,15 @@ impl KickComponent {
             let channel_id = post.channel_id();
             channel_id
                 .edit_message(ctx, post.message_id(), EditMessage::new().embed(embed))
-                .await?;
+                .await
+                .unwrap();
 
-            post.save::<Db, Manager>(pool).await?;
+            post.save::<Db, Manager>(pool).await.unwrap();
 
             interaction
                 .create_response(ctx, CreateInteractionResponse::Acknowledge)
-                .await?;
+                .await
+                .unwrap();
         } else {
             interaction
                 .create_response(
@@ -47,7 +51,8 @@ impl KickComponent {
                             .ephemeral(true),
                     ),
                 )
-                .await?;
+                .await
+                .unwrap();
         }
 
         Ok(())

@@ -4,9 +4,11 @@ pub use create::LfgCreateModal;
 mod edit;
 pub use edit::LfgEditModal;
 
-use chrono::DateTime;
+use chrono::{DateTime, NaiveDateTime, TimeZone};
 use chrono_tz::Tz;
 use serenity::all::{CreateActionRow, CreateInputText, InputTextStyle};
+
+use crate::{Error, Result};
 
 pub fn modal_components(
     activity: &str,
@@ -42,3 +44,19 @@ pub fn modal_components(
     ]
 }
 //CreateModal::new("lfg_edit", "Edit Event").components(row)
+
+fn start_time(timezone: Tz, start_time_str: &str) -> Result<DateTime<Tz>> {
+    match NaiveDateTime::parse_from_str(start_time_str, "%Y-%m-%d %H:%M") {
+        Ok(naive_dt) => {
+            let st = timezone
+                .from_local_datetime(&naive_dt)
+                .single()
+                .expect("Invalid date time");
+
+            Ok(st)
+        }
+        Err(_) => Err(Error::InvalidDateTime {
+            format: "YYYY-MM-DD HH:MM".to_string(),
+        }),
+    }
+}

@@ -59,12 +59,9 @@ impl LfgCommand {
         pool: &Pool<Db>,
         options: HashMap<&str, &ResolvedValue<'_>>,
     ) -> Result<()> {
-        interaction.defer_ephemeral(ctx).await?;
+        interaction.defer_ephemeral(ctx).await.unwrap();
 
-        let guild_id = match interaction.guild_id {
-            Some(guild_id) => guild_id,
-            None => return Err(Error::GuildRequired),
-        };
+        let guild_id = interaction.guild_id.ok_or(Error::GuildRequired)?;
 
         let channel = match options.get("channel") {
             Some(ResolvedValue::Channel(channel)) => channel.id,
@@ -76,14 +73,15 @@ impl LfgCommand {
             _ => None,
         };
 
-        Manager::save(pool, guild_id, channel, role).await?;
+        Manager::save(pool, guild_id, channel, role).await.unwrap();
 
         interaction
             .edit_response(
                 ctx,
                 EditInteractionResponse::new().content("LFG plugin has been setup"),
             )
-            .await?;
+            .await
+            .unwrap();
 
         Ok(())
     }
@@ -99,7 +97,9 @@ impl LfgCommand {
             _ => unreachable!("Activity is required"),
         };
 
-        let timezone = Manager::get(pool, interaction.user.id, &interaction.locale).await?;
+        let timezone = Manager::get(pool, interaction.user.id, &interaction.locale)
+            .await
+            .unwrap();
         let now = timezone.from_utc_datetime(&Utc::now().naive_utc());
 
         let fireteam_size = match ACTIVITIES.iter().find(|a| a.name == activity) {
@@ -113,7 +113,8 @@ impl LfgCommand {
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Modal(modal))
-            .await?;
+            .await
+            .unwrap();
 
         Ok(())
     }
@@ -233,20 +234,21 @@ impl LfgCommand {
         pool: &Pool<Db>,
         options: HashMap<&str, &ResolvedValue<'_>>,
     ) -> Result<()> {
-        interaction.defer_ephemeral(ctx).await?;
+        interaction.defer_ephemeral(ctx).await.unwrap();
 
         let thread_id = match options.get("channel") {
             Some(ResolvedValue::Channel(channel)) => channel.id,
             _ => unreachable!("Thread is required"),
         };
 
-        let post = Manager::get(pool, thread_id.get()).await?;
+        let post = Manager::get(pool, thread_id.get()).await.unwrap();
 
         let embed = join_post::<Db, Manager>(ctx, pool, post, interaction.user.id).await?;
 
         thread_id
             .edit_message(ctx, thread_id.get(), EditMessage::new().embed(embed))
-            .await?;
+            .await
+            .unwrap();
 
         interaction
             .edit_response(
@@ -254,7 +256,8 @@ impl LfgCommand {
                 EditInteractionResponse::new()
                     .content(format!("You have joined {}", thread_id.mention())),
             )
-            .await?;
+            .await
+            .unwrap();
 
         Ok(())
     }
@@ -265,20 +268,23 @@ impl LfgCommand {
         pool: &Pool<Db>,
         options: HashMap<&str, &ResolvedValue<'_>>,
     ) -> Result<()> {
-        interaction.defer_ephemeral(ctx).await?;
+        interaction.defer_ephemeral(ctx).await.unwrap();
 
         let thread_id = match options.get("channel") {
             Some(ResolvedValue::Channel(channel)) => channel.id,
             _ => unreachable!("Thread is required"),
         };
 
-        let post = Manager::get(pool, thread_id.get()).await?;
+        let post = Manager::get(pool, thread_id.get()).await.unwrap();
 
-        let embed = leave_post::<Db, Manager>(ctx, pool, post, interaction.user.id).await?;
+        let embed = leave_post::<Db, Manager>(ctx, pool, post, interaction.user.id)
+            .await
+            .unwrap();
 
         thread_id
             .edit_message(ctx, thread_id.get(), EditMessage::new().embed(embed))
-            .await?;
+            .await
+            .unwrap();
 
         interaction
             .edit_response(
@@ -286,7 +292,8 @@ impl LfgCommand {
                 EditInteractionResponse::new()
                     .content(format!("You have left {}", thread_id.mention())),
             )
-            .await?;
+            .await
+            .unwrap();
 
         Ok(())
     }
@@ -301,16 +308,16 @@ impl LfgCommand {
         pool: &Pool<Db>,
         options: HashMap<&str, &ResolvedValue<'_>>,
     ) -> Result<()> {
-        interaction.defer_ephemeral(ctx).await?;
+        interaction.defer_ephemeral(ctx).await.unwrap();
 
         let timezone = match options.get("region") {
             Some(ResolvedValue::String(region)) => *region,
             _ => unreachable!("Region is required"),
         };
 
-        let tz = Tz::from_str(timezone)?;
+        let tz = Tz::from_str(timezone).unwrap();
 
-        Manager::save(pool, interaction.user.id, tz).await?;
+        Manager::save(pool, interaction.user.id, tz).await.unwrap();
 
         interaction
             .edit_response(
@@ -318,7 +325,8 @@ impl LfgCommand {
                 EditInteractionResponse::new()
                     .content(format!("Your timezone has been set to {}", tz.name())),
             )
-            .await?;
+            .await
+            .unwrap();
 
         Ok(())
     }
@@ -463,7 +471,8 @@ impl LfgCommand {
                     CreateAutocompleteResponse::new().set_choices(filtered),
                 ),
             )
-            .await?;
+            .await
+            .unwrap();
 
         Ok(())
     }

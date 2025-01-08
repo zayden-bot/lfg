@@ -1,4 +1,3 @@
-use chrono::{NaiveDateTime, TimeZone};
 use serenity::all::{
     AutoArchiveDuration, Context, CreateForumPost, CreateInteractionResponse, CreateMessage,
     Mentionable, ModalInteraction,
@@ -10,6 +9,8 @@ use crate::{
     create_lfg_embed, create_main_row, Error, LfgPostManager, LfgPostRow, Result, ACTIVITIES,
 };
 use crate::{LfgGuildManager, TimezoneManager};
+
+use super::start_time;
 
 pub struct LfgCreateModal;
 
@@ -25,10 +26,7 @@ impl LfgCreateModal {
         PostManager: LfgPostManager<Db>,
         TzManager: TimezoneManager<Db>,
     {
-        let guild_id = match interaction.guild_id {
-            Some(guild_id) => guild_id,
-            None => return Err(Error::GuildRequired),
-        };
+        let guild_id = interaction.guild_id.ok_or(Error::GuildRequired)?;
 
         let mut inputs = parse_modal_data(&interaction.data.components);
 
@@ -38,7 +36,8 @@ impl LfgCreateModal {
         let fireteam_size = inputs
             .remove("fireteam size")
             .expect("Fireteam size should exist as it's required")
-            .parse::<u8>()?;
+            .parse::<u8>()
+            .unwrap();
         let description = match inputs.remove("description") {
             Some(description) => &description.chars().take(1024).collect::<String>(),
             None => activity,
@@ -47,19 +46,11 @@ impl LfgCreateModal {
             .remove("start time")
             .expect("Start time should exist as it's required");
 
-        let timezone = TzManager::get(pool, interaction.user.id, &interaction.locale).await?;
+        let timezone = TzManager::get(pool, interaction.user.id, &interaction.locale)
+            .await
+            .unwrap();
 
-        let start_time = match NaiveDateTime::parse_from_str(start_time_str, "%Y-%m-%d %H:%M") {
-            Ok(naive_dt) => timezone
-                .from_local_datetime(&naive_dt)
-                .single()
-                .expect("Invalid date time"),
-            Err(_) => {
-                return Err(Error::InvalidDateTime {
-                    format: "YYYY-MM-DD HH:MM".to_string(),
-                });
-            }
-        };
+        let start_time = start_time(timezone, start_time_str)?;
 
         let mut post = LfgPostRow::new(
             1,
@@ -74,17 +65,18 @@ impl LfgCreateModal {
 
         let row = create_main_row();
 
-        let lfg_guild = GuildManager::get(pool, guild_id).await?;
-        let channel = match lfg_guild {
-            Some(guild) => guild
-                .channel_id()
-                .to_channel(ctx)
-                .await
-                .unwrap()
-                .guild()
-                .unwrap(),
-            None => return Err(Error::MissingSetup),
-        };
+        let lfg_guild = GuildManager::get(pool, guild_id)
+            .await
+            .unwrap()
+            .ok_or(Error::MissingSetup)?;
+
+        let channel = lfg_guild
+            .channel_id()
+            .to_channel(ctx)
+            .await
+            .unwrap()
+            .guild()
+            .unwrap();
 
         let tags = channel
             .available_tags
@@ -110,22 +102,25 @@ impl LfgCreateModal {
                 .auto_archive_duration(AutoArchiveDuration::OneWeek)
                 .set_applied_tags(tags),
             )
-            .await?;
+            .await
+            .unwrap();
 
         thread
             .send_message(
                 ctx,
                 CreateMessage::new().content(interaction.user.mention().to_string()),
             )
-            .await?;
+            .await
+            .unwrap();
 
         post.id = thread.id.get() as i64;
 
-        post.save::<Db, PostManager>(pool).await?;
+        post.save::<Db, PostManager>(pool).await.unwrap();
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Acknowledge)
-            .await?;
+            .await
+            .unwrap();
 
         Ok(())
     }

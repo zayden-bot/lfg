@@ -19,7 +19,7 @@ impl SettingsComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let post = Manager::get(pool, interaction.message.id).await?;
+        let post = Manager::get(pool, interaction.message.id).await.unwrap();
 
         if interaction.user.id != post.owner_id() {
             return Err(Error::PermissionDenied {
@@ -38,7 +38,8 @@ impl SettingsComponents {
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Modal(modal))
-            .await?;
+            .await
+            .unwrap();
 
         Ok(())
     }
@@ -52,7 +53,7 @@ impl SettingsComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let post = Manager::get(pool, interaction.message.id).await?;
+        let post = Manager::get(pool, interaction.message.id).await.unwrap();
 
         if interaction.user.id != post.owner_id() {
             return Err(Error::PermissionDenied {
@@ -71,7 +72,8 @@ impl SettingsComponents {
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Modal(modal))
-            .await?;
+            .await
+            .unwrap();
 
         Ok(())
     }
@@ -84,7 +86,7 @@ impl SettingsComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let post = Manager::get(pool, interaction.message.id).await?;
+        let post = Manager::get(pool, interaction.message.id).await.unwrap();
 
         if interaction.user.id != post.owner_id() {
             return Err(Error::PermissionDenied {
@@ -109,7 +111,8 @@ impl SettingsComponents {
                         .ephemeral(true),
                 ),
             )
-            .await?;
+            .await
+            .unwrap();
 
         Ok(())
     }
@@ -123,7 +126,7 @@ impl SettingsComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let post = Manager::get(pool, interaction.message.id).await?;
+        let post = Manager::get(pool, interaction.message.id).await.unwrap();
 
         if interaction.user.id != post.owner_id() {
             return Err(Error::PermissionDenied {
@@ -131,9 +134,9 @@ impl SettingsComponents {
             });
         }
 
-        post.delete::<Db, Manager>(pool).await?;
+        post.delete::<Db, Manager>(pool).await.unwrap();
 
-        interaction.channel_id.delete(ctx).await?;
+        interaction.channel_id.delete(ctx).await.unwrap();
 
         Ok(())
     }
