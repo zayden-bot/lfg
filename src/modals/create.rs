@@ -1,5 +1,6 @@
 use serenity::all::{
-    AutoArchiveDuration, Context, CreateForumPost, CreateInteractionResponse, CreateMessage,
+    AutoArchiveDuration, Context, CreateForumPost, CreateInteractionResponse,
+    CreateInteractionResponseMessage, CreateMessage, DiscordJsonError, ErrorResponse, HttpError,
     Mentionable, ModalInteraction,
 };
 use sqlx::Pool;
@@ -92,7 +93,7 @@ impl LfgCreateModal {
             })
             .map(|tag| tag.id);
 
-        let thread = channel
+        let thread = match channel
             .create_forum_post(
                 ctx,
                 CreateForumPost::new(
@@ -103,7 +104,29 @@ impl LfgCreateModal {
                 .set_applied_tags(tags),
             )
             .await
-            .unwrap();
+        {
+            Ok(thread) => thread,
+            // A tag is required to create a thread
+            Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
+                error: DiscordJsonError { code: 40067, .. },
+                ..
+            }))) => {
+                interaction
+                    .create_response(
+                        ctx,
+                        CreateInteractionResponse::Message(
+                            CreateInteractionResponseMessage::new()
+                                .ephemeral(true)
+                                .content("Unable to parse Activity and apply necessary tags. Please fix the Activity field and use the edit button to update after creating the post."),
+                        ),
+                    )
+                    .await
+                    .unwrap();
+
+                return Ok(());
+            }
+            r => r.unwrap(),
+        };
 
         thread
             .send_message(
