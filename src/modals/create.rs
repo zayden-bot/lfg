@@ -1,7 +1,6 @@
 use serenity::all::{
-    AutoArchiveDuration, Context, CreateForumPost, CreateInteractionResponse,
-    CreateInteractionResponseMessage, CreateMessage, DiscordJsonError, ErrorResponse, HttpError,
-    Mentionable, ModalInteraction,
+    AutoArchiveDuration, Context, CreateForumPost, CreateInteractionResponse, CreateMessage,
+    DiscordJsonError, ErrorResponse, HttpError, Mentionable, ModalInteraction,
 };
 use sqlx::Pool;
 use zayden_core::parse_modal_data;
@@ -111,19 +110,7 @@ impl LfgCreateModal {
                 error: DiscordJsonError { code: 40067, .. },
                 ..
             }))) => {
-                interaction
-                    .create_response(
-                        ctx,
-                        CreateInteractionResponse::Message(
-                            CreateInteractionResponseMessage::new()
-                                .ephemeral(true)
-                                .content("Unable to parse Activity and apply necessary tags. Please fix the Activity field and use the edit button to update after creating the post."),
-                        ),
-                    )
-                    .await
-                    .unwrap();
-
-                return Ok(());
+                return Err(Error::TagRequired);
             }
             r => r.unwrap(),
         };

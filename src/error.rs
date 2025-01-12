@@ -10,6 +10,7 @@ pub enum Error {
     FireteamFull,
     PermissionDenied { owner: UserId },
     InvalidDateTime { format: String },
+    TagRequired,
 }
 
 impl ErrorResponse for Error {
@@ -27,6 +28,7 @@ impl ErrorResponse for Error {
             Self::InvalidDateTime { format } => {
                 format!("Invalid date time. Expected format: {}", format)
             }
+            Self::TagRequired => String::from("Unable to parse Activity and apply necessary tags. Please fix the Activity field and use the edit button to update after creating the post."),
         }
     }
 }
