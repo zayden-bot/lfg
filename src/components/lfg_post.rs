@@ -20,6 +20,10 @@ impl PostComponents {
     {
         let post = Manager::get(pool, &interaction.message.id).await.unwrap();
 
+        if post.contains(interaction.user.id) {
+            return Ok(());
+        }
+
         let embed = join_post::<Db, Manager>(ctx, pool, post, interaction.user.id).await?;
 
         interaction
