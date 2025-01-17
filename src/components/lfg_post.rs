@@ -20,8 +20,8 @@ impl PostComponents {
     {
         let post = Manager::get(pool, &interaction.message.id).await.unwrap();
 
-        if post.contains(interaction.user.id) {
-            return Ok(());
+        if post.fireteam().contains(&interaction.user.id) {
+            return Err(Error::AlreadyJoined);
         }
 
         let embed = join_post::<Db, Manager>(ctx, pool, post, interaction.user.id).await?;
@@ -102,6 +102,10 @@ impl PostComponents {
     {
         let mut post = Manager::get(pool, interaction.message.id).await.unwrap();
 
+        if post.alternatives().contains(&interaction.user.id) {
+            return Err(Error::AlreadyJoined);
+        }
+
         post.join_alt(interaction.user.id);
 
         let embed = create_lfg_embed(&post, &post.owner(ctx).await.unwrap().name);
@@ -151,7 +155,7 @@ impl PostComponents {
         }
 
         let main_row = create_main_row();
-        let settings_row_1 = CreateActionRow::Buttons(vec![
+        let settings_row = CreateActionRow::Buttons(vec![
             CreateButton::new("lfg_edit")
                 .label("Edit")
                 .style(ButtonStyle::Secondary),
@@ -171,7 +175,7 @@ impl PostComponents {
                 ctx,
                 CreateInteractionResponse::UpdateMessage(
                     CreateInteractionResponseMessage::new()
-                        .components(vec![main_row, settings_row_1]),
+                        .components(vec![main_row, settings_row]),
                 ),
             )
             .await

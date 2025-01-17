@@ -11,6 +11,7 @@ pub enum Error {
     PermissionDenied { owner: UserId },
     InvalidDateTime { format: String },
     TagRequired,
+    AlreadyJoined,
 }
 
 impl ErrorResponse for Error {
@@ -29,6 +30,7 @@ impl ErrorResponse for Error {
                 format!("Invalid date time. Expected format: {}", format)
             }
             Self::TagRequired => String::from("Unable to parse Activity and apply necessary tags. Please fix the Activity field and use the edit button to update after creating the post."),
+            Self::AlreadyJoined => String::from("You have already joined this LFG."),
         }
     }
 }
