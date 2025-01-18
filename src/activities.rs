@@ -1,6 +1,6 @@
 use core::fmt;
 
-pub const ACTIVITIES: [Activity; 35] = [
+pub const ACTIVITIES: [Activity; 39] = [
     Activity::new("Salvation's Edge", ActivityCategory::Raid, 6),
     Activity::new("Crota's End", ActivityCategory::Raid, 6),
     Activity::new("Root of Nightmares", ActivityCategory::Raid, 6),
@@ -10,6 +10,8 @@ pub const ACTIVITIES: [Activity; 35] = [
     Activity::new("Deep Stone Crypt", ActivityCategory::Raid, 6),
     Activity::new("Garden of Salvation", ActivityCategory::Raid, 6),
     Activity::new("Last Wish", ActivityCategory::Raid, 6),
+    Activity::new("Any Raid", ActivityCategory::Raid, 6),
+    Activity::new("Sundered Doctrine", ActivityCategory::Dungeon, 3),
     Activity::new("Vesper's Host", ActivityCategory::Dungeon, 3),
     Activity::new("Warlord's Ruin", ActivityCategory::Dungeon, 3),
     Activity::new("Ghosts of the Deep", ActivityCategory::Dungeon, 3),
@@ -19,6 +21,8 @@ pub const ACTIVITIES: [Activity; 35] = [
     Activity::new("Prophecy", ActivityCategory::Dungeon, 3),
     Activity::new("Pit of Heresy", ActivityCategory::Dungeon, 3),
     Activity::new("Shattered Throne", ActivityCategory::Dungeon, 3),
+    Activity::new("Any Dungeon", ActivityCategory::Dungeon, 3),
+    Activity::new("Kell's Fall", ActivityCategory::ExoticMission, 3),
     Activity::new("Duel Destiny", ActivityCategory::ExoticMission, 2),
     Activity::new("The Whisper", ActivityCategory::ExoticMission, 3),
     Activity::new("Zero Hour", ActivityCategory::ExoticMission, 3),
