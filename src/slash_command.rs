@@ -4,10 +4,10 @@ use std::str::FromStr;
 use chrono::{TimeZone, Utc};
 use chrono_tz::Tz;
 use serenity::all::{
-    AutocompleteChoice, CommandInteraction, CommandOptionType, Context, CreateAutocompleteResponse,
-    CreateCommand, CreateCommandOption, CreateInteractionResponse, CreateModal, CreateSelectMenu,
-    CreateSelectMenuKind, CreateSelectMenuOption, EditInteractionResponse, EditMessage,
-    GuildChannel, Mentionable, ResolvedValue,
+    AutocompleteChoice, AutocompleteOption, CommandInteraction, CommandOptionType, Context,
+    CreateAutocompleteResponse, CreateCommand, CreateCommandOption, CreateInteractionResponse,
+    CreateModal, CreateSelectMenu, CreateSelectMenuKind, CreateSelectMenuOption,
+    EditInteractionResponse, EditMessage, GuildChannel, Mentionable, ResolvedValue,
 };
 use sqlx::{Database, Pool};
 use zayden_core::parse_options;
@@ -425,39 +425,35 @@ impl LfgCommand {
             .add_option(timezone)
     }
 
-    pub async fn autocomplete(ctx: &Context, interaction: &CommandInteraction) -> Result<()> {
-        let command = &interaction.data.options()[0];
+    pub async fn autocomplete(
+        ctx: &Context,
+        interaction: &CommandInteraction,
+        option: AutocompleteOption<'_>,
+    ) -> Result<()> {
+        let command = &interaction.data.options().remove(0);
 
         let filtered = match command.name {
-            "create" => {
-                let option = interaction.data.autocomplete().unwrap();
+            "create" => ACTIVITIES
+                .iter()
+                .filter(|activity| {
+                    activity
+                        .name
+                        .to_lowercase()
+                        .starts_with(&option.value.to_lowercase())
+                })
+                .take(25)
+                .map(|activity| AutocompleteChoice::new(activity.name, activity.name))
+                .collect::<Vec<_>>(),
 
-                ACTIVITIES
-                    .iter()
-                    .filter(|activity| {
-                        activity
-                            .name
-                            .to_lowercase()
-                            .starts_with(&option.value.to_lowercase())
-                    })
-                    .take(25)
-                    .map(|activity| AutocompleteChoice::new(activity.name, activity.name))
-                    .collect::<Vec<_>>()
-            }
-
-            "timezone" => {
-                let option = interaction.data.autocomplete().unwrap();
-
-                chrono_tz::TZ_VARIANTS
-                    .iter()
-                    .filter(|tz| {
-                        let name = tz.name().to_lowercase();
-                        name.contains(&option.value.to_lowercase())
-                    })
-                    .take(25)
-                    .map(|tz| AutocompleteChoice::new(tz.name(), tz.name()))
-                    .collect::<Vec<_>>()
-            }
+            "timezone" => chrono_tz::TZ_VARIANTS
+                .iter()
+                .filter(|tz| {
+                    let name = tz.name().to_lowercase();
+                    name.contains(&option.value.to_lowercase())
+                })
+                .take(25)
+                .map(|tz| AutocompleteChoice::new(tz.name(), tz.name()))
+                .collect::<Vec<_>>(),
             _ => return Ok(()),
         };
 
