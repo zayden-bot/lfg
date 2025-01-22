@@ -149,9 +149,7 @@ impl PostComponents {
         let post = Manager::get(pool, interaction.message.id).await.unwrap();
 
         if interaction.user.id != post.owner_id() {
-            return Err(Error::PermissionDenied {
-                owner: post.owner_id(),
-            });
+            return Err(Error::permission_denied(post.owner_id()));
         }
 
         let main_row = create_main_row();

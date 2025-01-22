@@ -46,17 +46,13 @@ pub fn modal_components(
 //CreateModal::new("lfg_edit", "Edit Event").components(row)
 
 fn start_time(timezone: Tz, start_time_str: &str) -> Result<DateTime<Tz>> {
-    match NaiveDateTime::parse_from_str(start_time_str, "%Y-%m-%d %H:%M") {
-        Ok(naive_dt) => {
-            let st = timezone
-                .from_local_datetime(&naive_dt)
-                .single()
-                .expect("Invalid date time");
+    let naive_dt = NaiveDateTime::parse_from_str(start_time_str, "%Y-%m-%d %H:%M")
+        .map_err(|_| Error::invalid_date_time("YYYY-MM-DD HH:MM"))?;
 
-            Ok(st)
-        }
-        Err(_) => Err(Error::InvalidDateTime {
-            format: "YYYY-MM-DD HH:MM".to_string(),
-        }),
-    }
+    let st = timezone
+        .from_local_datetime(&naive_dt)
+        .single()
+        .expect("Invalid date time");
+
+    Ok(st)
 }

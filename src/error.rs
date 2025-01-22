@@ -5,32 +5,42 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
-    GuildRequired,
+    MissingGuildId,
     MissingSetup,
     FireteamFull,
-    PermissionDenied { owner: UserId },
-    InvalidDateTime { format: String },
+    PermissionDenied(String),
+    InvalidDateTime(String),
     TagRequired,
     AlreadyJoined,
 }
 
+impl Error {
+    pub fn permission_denied(owner: UserId) -> Self {
+        let response = format!(
+            "Permission denied. Only the owner ({}) can use this action.",
+            owner.mention()
+        );
+        
+        Self::PermissionDenied(response)
+    }
+
+    pub fn invalid_date_time(format: &str) -> Self {
+        let response = format!("Invalid date time. Expected format: {}", format);
+
+        Self::InvalidDateTime(response)
+    }
+}
+
 impl ErrorResponse for Error {
-    fn to_response(&self) -> String {
+    fn to_response(&self) -> &str {
         match self {
-            Self::GuildRequired => String::from("Guild required to use this command."),
-            Self::MissingSetup => String::from(
-                "Missing setup. If you are the owner, please run `/lfg setup` to set up the bot.",
-            ),
-            Self::FireteamFull => String::from("Unable to join. Fireteam is full."),
-            Self::PermissionDenied { owner } => format!(
-                "Permission denied. Only the owner ({}) can use this action.",
-                owner.mention()
-            ),
-            Self::InvalidDateTime { format } => {
-                format!("Invalid date time. Expected format: {}", format)
-            }
-            Self::TagRequired => String::from("Unable to parse Activity and apply necessary tags. Please fix the Activity field and use the edit button to update after creating the post."),
-            Self::AlreadyJoined => String::from("You have already joined this LFG."),
+            Self::MissingGuildId => zayden_core::Error::MissingGuildId.to_response(),
+            Self::MissingSetup => "Missing setup. If you are the owner, please run `/lfg setup` to set up the bot.",
+            Self::FireteamFull => "Unable to join. Fireteam is full.",
+            Self::PermissionDenied(msg) => msg, 
+            Self::InvalidDateTime(msg) => msg,
+            Self::TagRequired => "Unable to parse Activity and apply necessary tags. Please fix the Activity field and use the edit button to update after creating the post.",
+            Self::AlreadyJoined => "You have already joined this LFG.",
         }
     }
 }

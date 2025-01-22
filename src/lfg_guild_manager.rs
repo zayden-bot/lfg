@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use serenity::all::{ChannelId, GuildId};
+use serenity::all::{ChannelId, GuildId, RoleId};
 use sqlx::any::AnyQueryResult;
 use sqlx::{FromRow, Pool};
 
@@ -12,9 +12,9 @@ pub trait LfgGuildManager<Db: sqlx::Database> {
 
     async fn save(
         pool: &Pool<Db>,
-        id: impl Into<i64> + Send,
-        channel: impl Into<i64> + Send,
-        role: Option<impl Into<i64> + Send>,
+        id: impl Into<GuildId> + Send,
+        channel: impl Into<ChannelId> + Send,
+        role: Option<impl Into<RoleId> + Send>,
     ) -> sqlx::Result<AnyQueryResult>;
 }
 
@@ -28,5 +28,9 @@ pub struct LfgGuildRow {
 impl LfgGuildRow {
     pub fn channel_id(&self) -> ChannelId {
         ChannelId::new(self.channel_id as u64)
+    }
+
+    pub fn role_id(&self) -> Option<RoleId> {
+        self.role_id.map(|id| RoleId::new(id as u64))
     }
 }

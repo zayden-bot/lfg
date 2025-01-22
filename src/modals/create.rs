@@ -26,7 +26,7 @@ impl LfgCreateModal {
         PostManager: LfgPostManager<Db>,
         TzManager: TimezoneManager<Db>,
     {
-        let guild_id = interaction.guild_id.ok_or(Error::GuildRequired)?;
+        let guild_id = interaction.guild_id.ok_or(Error::MissingGuildId)?;
 
         let mut inputs = parse_modal_data(&interaction.data.components);
 
