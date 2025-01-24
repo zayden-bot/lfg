@@ -238,9 +238,19 @@ impl LfgCommand {
             unreachable!("Thread is required");
         };
 
+        let user_id = match options.remove("guardian") {
+            Some(ResolvedValue::User(user, _)) => user.id,
+            _ => interaction.user.id,
+        };
+
+        let alternative = match options.remove("alternate") {
+            Some(ResolvedValue::Boolean(alternative)) => alternative,
+            _ => false,
+        };
+
         let post = Manager::get(pool, thread.id.get()).await.unwrap();
 
-        let embed = join_post::<Db, Manager>(ctx, pool, post, interaction.user.id).await?;
+        let embed = join_post::<Db, Manager>(ctx, pool, post, user_id, alternative).await?;
 
         thread
             .id
@@ -387,7 +397,17 @@ impl LfgCommand {
         .add_sub_option(
             CreateCommandOption::new(CommandOptionType::Channel, "thread", "The LFG thread")
                 .required(true),
-        );
+        )
+        .add_sub_option(CreateCommandOption::new(
+            CommandOptionType::User,
+            "guardian",
+            "The guardian you want to join",
+        ))
+        .add_sub_option(CreateCommandOption::new(
+            CommandOptionType::Boolean,
+            "alternate",
+            "Join as an alternate",
+        ));
 
         let leave = CreateCommandOption::new(
             CommandOptionType::SubCommand,

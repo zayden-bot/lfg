@@ -80,12 +80,17 @@ async fn join_post<Db: Database, Manager: LfgPostManager<Db>>(
     pool: &Pool<Db>,
     mut post: LfgPostRow,
     user_id: impl Into<UserId>,
+    alternative: bool,
 ) -> Result<CreateEmbed> {
-    if post.is_full() {
+    if !alternative && post.is_full() {
         return Err(Error::FireteamFull);
     }
 
-    post.join(user_id);
+    if alternative {
+        post.join_alt(user_id);
+    } else {
+        post.join(user_id);
+    }
 
     let embed = create_lfg_embed(&post, &post.owner(ctx).await.unwrap().name);
 

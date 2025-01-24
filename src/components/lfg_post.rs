@@ -24,7 +24,7 @@ impl PostComponents {
             return Err(Error::AlreadyJoined);
         }
 
-        let embed = join_post::<Db, Manager>(ctx, pool, post, interaction.user.id).await?;
+        let embed = join_post::<Db, Manager>(ctx, pool, post, interaction.user.id, false).await?;
 
         interaction
             .channel_id
@@ -100,17 +100,13 @@ impl PostComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let mut post = Manager::get(pool, interaction.message.id).await.unwrap();
+        let post = Manager::get(pool, interaction.message.id).await.unwrap();
 
         if post.alternatives().contains(&interaction.user.id) {
             return Err(Error::AlreadyJoined);
         }
 
-        post.join_alt(interaction.user.id);
-
-        let embed = create_lfg_embed(&post, &post.owner(ctx).await.unwrap().name);
-
-        post.save::<Db, Manager>(pool).await.unwrap();
+        let embed = join_post::<Db, Manager>(ctx, pool, post, interaction.user.id, true).await?;
 
         interaction
             .channel_id
