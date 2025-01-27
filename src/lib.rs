@@ -36,8 +36,13 @@ fn create_lfg_embed(post: &LfgPostRow, owner_name: &str) -> CreateEmbed {
     let mut embed = CreateEmbed::new()
         .title(format!("{} - <t:{}>", &post.activity, timestamp))
         .field("Activity", &post.activity, true)
-        .field("Start Time", format!("<t:{}:R>", timestamp), true)
-        .field("Description", &post.description, false)
+        .field("Start Time", format!("<t:{}:R>", timestamp), true);
+
+    if !post.description.is_empty() {
+        embed = embed.field("Description", &post.description, false)
+    }
+
+    embed = embed
         .field(
             format!("Joined: {}/{}", fireteam.len(), post.fireteam_size()),
             fireteam_str,
