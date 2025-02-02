@@ -45,8 +45,6 @@ impl LfgEditModal {
 
         let start_time = start_time(timezone, start_time_str)?;
 
-        let channel_id = interaction.channel_id;
-
         let mut post = PostManager::get(pool, interaction.message.as_ref().unwrap().id)
             .await
             .unwrap();
@@ -58,7 +56,8 @@ impl LfgEditModal {
 
         let embed = create_lfg_embed(&post, &interaction.user.name);
 
-        channel_id
+        interaction
+            .channel_id
             .edit_thread(
                 ctx,
                 EditThread::new().name(format!(
@@ -70,8 +69,13 @@ impl LfgEditModal {
             .await
             .unwrap();
 
-        channel_id
-            .edit_message(ctx, channel_id.get(), EditMessage::new().embed(embed))
+        interaction
+            .channel_id
+            .edit_message(
+                ctx,
+                interaction.channel_id.get(),
+                EditMessage::new().embed(embed),
+            )
             .await
             .unwrap();
 
