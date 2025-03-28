@@ -314,13 +314,12 @@ impl LfgCommand {
     ) {
         interaction.defer_ephemeral(ctx).await.unwrap();
 
-        let posts = Manager::get_by_user(pool, interaction.user.id)
+        let posts = Manager::get_upcoming_by_user(pool, interaction.user.id)
             .await
             .unwrap();
 
         let (joined, alternative) = posts
             .into_iter()
-            .filter(|row| row.timestamp() > Utc::now().timestamp())
             .partition::<Vec<_>, _>(|row| row.fireteam().contains(&interaction.user.id));
 
         let mut embed = CreateEmbed::new().title("Joined LFG Events");

@@ -1,15 +1,17 @@
 use async_trait::async_trait;
 use chrono::{DateTime, NaiveDateTime, TimeZone};
-use serenity::all::{ChannelId, Context, MessageId, User, UserId};
+use serenity::all::{ChannelId, Context, EditThread, MessageId, User, UserId};
 use sqlx::any::AnyQueryResult;
 use sqlx::prelude::FromRow;
-use sqlx::Pool;
+use sqlx::{Database, Pool};
 
 #[async_trait]
 pub trait LfgPostManager<Db: sqlx::Database> {
+    async fn get_past(pool: &Pool<Db>) -> sqlx::Result<Vec<LfgPostRow>>;
+
     async fn get(pool: &Pool<Db>, id: impl Into<MessageId> + Send) -> sqlx::Result<LfgPostRow>;
 
-    async fn get_by_user(
+    async fn get_upcoming_by_user(
         pool: &Pool<Db>,
         id: impl Into<UserId> + Send,
     ) -> sqlx::Result<Vec<LfgPostRow>>;
@@ -179,5 +181,19 @@ impl LfgPostRow {
         pool: &Pool<Db>,
     ) -> sqlx::Result<AnyQueryResult> {
         Manager::delete(pool, self.id as u64).await
+    }
+}
+
+pub async fn close_old_posts<Db: Database, Manager: LfgPostManager<Db>>(
+    ctx: &Context,
+    pool: &Pool<Db>,
+) {
+    let rows = Manager::get_past(pool).await.unwrap();
+
+    for row in rows {
+        row.channel_id()
+            .edit_thread(ctx, EditThread::new().archived(true))
+            .await
+            .unwrap();
     }
 }
