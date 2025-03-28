@@ -9,6 +9,11 @@ use sqlx::Pool;
 pub trait LfgPostManager<Db: sqlx::Database> {
     async fn get(pool: &Pool<Db>, id: impl Into<MessageId> + Send) -> sqlx::Result<LfgPostRow>;
 
+    async fn get_by_user(
+        pool: &Pool<Db>,
+        id: impl Into<UserId> + Send,
+    ) -> sqlx::Result<Vec<LfgPostRow>>;
+
     #[allow(clippy::too_many_arguments)]
     async fn save(
         pool: &Pool<Db>,

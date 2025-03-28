@@ -5,9 +5,10 @@ use chrono::{TimeZone, Utc};
 use chrono_tz::Tz;
 use serenity::all::{
     AutocompleteChoice, AutocompleteOption, CommandInteraction, CommandOptionType, Context,
-    CreateAutocompleteResponse, CreateCommand, CreateCommandOption, CreateInteractionResponse,
-    CreateModal, CreateSelectMenu, CreateSelectMenuKind, CreateSelectMenuOption,
-    EditInteractionResponse, EditMessage, GuildChannel, Mentionable, ResolvedValue,
+    CreateAutocompleteResponse, CreateCommand, CreateCommandOption, CreateEmbed,
+    CreateInteractionResponse, CreateModal, CreateSelectMenu, CreateSelectMenuKind,
+    CreateSelectMenuOption, EditInteractionResponse, EditMessage, GuildChannel, Mentionable,
+    ResolvedValue,
 };
 use sqlx::{Database, Pool};
 use zayden_core::parse_options;
@@ -45,7 +46,7 @@ impl LfgCommand {
             "tags" => Self::tags::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "join" => Self::join::<Db, PostManager>(ctx, interaction, pool, options).await?,
             "leave" => Self::leave::<Db, PostManager>(ctx, interaction, pool, options).await?,
-            "joined" => Self::joined(ctx, interaction).await,
+            "joined" => Self::joined::<Db, PostManager>(ctx, interaction, pool).await,
             "timezone" => Self::timezone::<Db, TzManager>(ctx, interaction, pool, options).await?,
             _ => unreachable!("Invalid subcommand"),
         }
@@ -306,8 +307,59 @@ impl LfgCommand {
         Ok(())
     }
 
-    async fn joined(ctx: &Context, interaction: &CommandInteraction) {
-        todo!()
+    async fn joined<Db: Database, Manager: LfgPostManager<Db>>(
+        ctx: &Context,
+        interaction: &CommandInteraction,
+        pool: &Pool<Db>,
+    ) {
+        interaction.defer_ephemeral(ctx).await.unwrap();
+
+        let posts = Manager::get_by_user(pool, interaction.user.id)
+            .await
+            .unwrap();
+
+        let (joined, alternative) = posts
+            .into_iter()
+            .partition::<Vec<_>, _>(|row| row.fireteam().contains(&interaction.user.id));
+
+        let mut embed = CreateEmbed::new().title("Joined LFG Events");
+
+        if !joined.is_empty() {
+            let values = joined
+                .into_iter()
+                .map(|row| {
+                    format!(
+                        "{0}\n<t:{1}> (<t:{1}:R>)\n{2}",
+                        row.activity,
+                        row.timestamp(),
+                        row.channel_id().mention()
+                    )
+                })
+                .collect::<Vec<_>>();
+
+            embed = embed.field("Joined Posts", values.join("\n\n"), false)
+        }
+
+        if !alternative.is_empty() {
+            let values = alternative
+                .into_iter()
+                .map(|row| {
+                    format!(
+                        "{0}\n<t:{1}> (<t:{1}:R>)\n{2}",
+                        row.activity,
+                        row.timestamp(),
+                        row.channel_id().mention()
+                    )
+                })
+                .collect::<Vec<_>>();
+
+            embed = embed.field("Alternative Posts", values.join("\n\n"), false)
+        }
+
+        interaction
+            .edit_response(ctx, EditInteractionResponse::new().embed(embed))
+            .await
+            .unwrap();
     }
 
     async fn timezone<Db: Database, Manager: TimezoneManager<Db>>(
@@ -419,6 +471,12 @@ impl LfgCommand {
                 .required(true),
         );
 
+        let joined = CreateCommandOption::new(
+            CommandOptionType::SubCommand,
+            "joined",
+            "View all the posts you have joined",
+        );
+
         let timezone = CreateCommandOption::new(
             CommandOptionType::SubCommand,
             "timezone",
@@ -437,11 +495,7 @@ impl LfgCommand {
             .add_option(tags)
             .add_option(join)
             .add_option(leave)
-            // .add_option(CreateCommandOption::new(
-            //     CommandOptionType::SubCommand,
-            //     "joined",
-            //     "View all the posts you have joined",
-            // ))
+            .add_option(joined)
             .add_option(timezone)
     }
 
