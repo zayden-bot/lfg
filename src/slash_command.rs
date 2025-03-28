@@ -337,7 +337,11 @@ impl LfgCommand {
                 })
                 .collect::<Vec<_>>();
 
-            embed = embed.field("Joined Posts", values.join("\n\n"), false)
+            embed = embed.field(
+                "Joined Posts",
+                values.join("\n\n").chars().take(1024).collect::<String>(),
+                false,
+            )
         }
 
         if !alternative.is_empty() {
