@@ -1,6 +1,7 @@
 mod activities;
 mod components;
 mod error;
+pub mod events;
 mod lfg_guild_manager;
 mod lfg_post_manager;
 mod modals;

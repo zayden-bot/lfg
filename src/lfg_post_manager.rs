@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use chrono::{DateTime, NaiveDateTime, TimeZone};
-use serenity::all::{ChannelId, Context, EditThread, Mentionable, MessageId, User, UserId};
+use serenity::all::{ChannelId, Context, EditThread, MessageId, User, UserId};
 use sqlx::any::AnyQueryResult;
 use sqlx::prelude::FromRow;
 use sqlx::{Database, Pool};
