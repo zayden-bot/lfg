@@ -320,6 +320,7 @@ impl LfgCommand {
 
         let (joined, alternative) = posts
             .into_iter()
+            .filter(|row| row.timestamp() > Utc::now().timestamp())
             .partition::<Vec<_>, _>(|row| row.fireteam().contains(&interaction.user.id));
 
         let mut embed = CreateEmbed::new().title("Joined LFG Events");
@@ -337,11 +338,7 @@ impl LfgCommand {
                 })
                 .collect::<Vec<_>>();
 
-            embed = embed.field(
-                "Joined Posts",
-                values.join("\n\n").chars().take(1024).collect::<String>(),
-                false,
-            )
+            embed = embed.field("Joined Posts", values.join("\n\n"), false)
         }
 
         if !alternative.is_empty() {
@@ -357,11 +354,7 @@ impl LfgCommand {
                 })
                 .collect::<Vec<_>>();
 
-            embed = embed.field(
-                "Alternative Posts",
-                values.join("\n\n").chars().take(1024).collect::<String>(),
-                false,
-            )
+            embed = embed.field("Alternative Posts", values.join("\n\n"), false)
         }
 
         interaction
