@@ -357,7 +357,11 @@ impl LfgCommand {
                 })
                 .collect::<Vec<_>>();
 
-            embed = embed.field("Alternative Posts", values.join("\n\n"), false)
+            embed = embed.field(
+                "Alternative Posts",
+                values.join("\n\n").chars().take(1024).collect::<String>(),
+                false,
+            )
         }
 
         interaction
