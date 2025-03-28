@@ -197,12 +197,7 @@ pub async fn close_old_posts<Db: Database, Manager: LfgPostManager<Db>>(
             .await
             .is_err()
         {
-            println!(
-                "{} | {}",
-                row.channel_id().mention(),
-                row.owner_id().mention()
-            )
-            // Manager::delete(pool, row.message_id()).await.unwrap();
+            Manager::delete(pool, row.message_id()).await.unwrap();
         }
     }
 }
