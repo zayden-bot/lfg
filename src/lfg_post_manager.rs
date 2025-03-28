@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use chrono::{DateTime, NaiveDateTime, TimeZone};
-use serenity::all::{ChannelId, Context, EditThread, MessageId, User, UserId};
+use serenity::all::{ChannelId, Context, EditThread, Mentionable, MessageId, User, UserId};
 use sqlx::any::AnyQueryResult;
 use sqlx::prelude::FromRow;
 use sqlx::{Database, Pool};
@@ -191,9 +191,18 @@ pub async fn close_old_posts<Db: Database, Manager: LfgPostManager<Db>>(
     let rows = Manager::get_past(pool).await.unwrap();
 
     for row in rows {
-        row.channel_id()
+        if row
+            .channel_id()
             .edit_thread(ctx, EditThread::new().archived(true))
             .await
-            .unwrap();
+            .is_err()
+        {
+            println!(
+                "{} | {}",
+                row.channel_id().mention(),
+                row.owner_id().mention()
+            )
+            // Manager::delete(pool, row.message_id()).await.unwrap();
+        }
     }
 }
