@@ -13,7 +13,9 @@ pub use components::{KickComponent, PostComponents, SettingsComponents, TagsComp
 pub use error::Error;
 use error::Result;
 pub use lfg_guild_manager::{LfgGuildManager, LfgGuildRow};
-pub use lfg_post_manager::{close_old_posts, LfgPostManager, LfgPostRow};
+pub use lfg_post_manager::{
+    close_old_posts, LfgMessageRow, LfgPostManager, LfgPostRow, LfgPostWithMessages,
+};
 pub use modals::{LfgCreateModal, LfgEditModal};
 use serenity::all::{
     ButtonStyle, ChannelId, Context, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter,

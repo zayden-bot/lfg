@@ -16,19 +16,7 @@ pub trait LfgPostManager<Db: sqlx::Database> {
         id: impl Into<UserId> + Send,
     ) -> sqlx::Result<Vec<LfgPostRow>>;
 
-    #[allow(clippy::too_many_arguments)]
-    async fn save(
-        pool: &Pool<Db>,
-        id: impl Into<i64> + Send,
-        owner: impl Into<i64> + Send,
-        activity: &str,
-        timestamp: NaiveDateTime,
-        timezone: &str,
-        description: &str,
-        fireteam_size: impl Into<i16> + Send,
-        fireteam: &[i64],
-        alternatives: &[i64],
-    ) -> sqlx::Result<AnyQueryResult>;
+    async fn save(pool: &Pool<Db>, row: LfgPostRow) -> sqlx::Result<AnyQueryResult>;
 
     async fn delete(
         pool: &Pool<Db>,
@@ -161,19 +149,7 @@ impl LfgPostRow {
         self,
         pool: &Pool<Db>,
     ) -> sqlx::Result<AnyQueryResult> {
-        Manager::save(
-            pool,
-            self.id,
-            self.owner_id,
-            &self.activity,
-            self.timestamp,
-            &self.timezone,
-            &self.description,
-            self.fireteam_size,
-            &self.fireteam,
-            &self.alternatives,
-        )
-        .await
+        Manager::save(pool, self).await
     }
 
     pub async fn delete<Db: sqlx::Database, Manager: LfgPostManager<Db>>(
@@ -182,6 +158,18 @@ impl LfgPostRow {
     ) -> sqlx::Result<AnyQueryResult> {
         Manager::delete(pool, self.id as u64).await
     }
+}
+
+#[derive(FromRow)]
+pub struct LfgMessageRow {
+    id: i64,
+    channel_id: i64,
+    post_id: i64,
+}
+
+pub struct LfgPostWithMessages {
+    post: LfgPostRow,
+    messages: Vec<LfgMessageRow>,
 }
 
 pub async fn close_old_posts<Db: Database, Manager: LfgPostManager<Db>>(
