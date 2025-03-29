@@ -235,8 +235,9 @@ impl LfgCommand {
     ) -> Result<()> {
         interaction.defer_ephemeral(ctx).await.unwrap();
 
-        let Some(ResolvedValue::Channel(thread)) = options.remove("channel") else {
-            unreachable!("Thread is required");
+        let thread = match options.remove("thread") {
+            Some(ResolvedValue::Channel(thread)) => thread,
+            _ => interaction.channel.as_ref().unwrap(),
         };
 
         let user_id = match options.remove("guardian") {
