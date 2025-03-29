@@ -39,10 +39,10 @@ impl LfgMessageRow {
     }
 
     pub fn channel_id(&self) -> ChannelId {
-        ChannelId::new(self.id as u64)
+        ChannelId::new(self.channel_id as u64)
     }
 
     pub fn post_id(&self) -> ChannelId {
-        ChannelId::new(self.id as u64)
+        ChannelId::new(self.post_id as u64)
     }
 }
