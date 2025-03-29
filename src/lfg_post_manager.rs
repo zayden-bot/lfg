@@ -11,6 +11,11 @@ pub trait LfgPostManager<Db: sqlx::Database> {
 
     async fn get(pool: &Pool<Db>, id: impl Into<MessageId> + Send) -> sqlx::Result<LfgPostRow>;
 
+    async fn get_with_messages(
+        pool: &Pool<Db>,
+        id: impl Into<MessageId> + Send,
+    ) -> sqlx::Result<LfgPostWithMessages>;
+
     async fn get_upcoming_by_user(
         pool: &Pool<Db>,
         id: impl Into<UserId> + Send,
@@ -24,7 +29,7 @@ pub trait LfgPostManager<Db: sqlx::Database> {
     ) -> sqlx::Result<AnyQueryResult>;
 }
 
-#[derive(FromRow, Clone, Default)]
+#[derive(FromRow)]
 pub struct LfgPostRow {
     pub id: i64,
     pub owner_id: i64,
@@ -160,14 +165,27 @@ impl LfgPostRow {
     }
 }
 
-#[derive(FromRow, Default)]
+#[derive(FromRow)]
 pub struct LfgMessageRow {
     pub id: i64,
     pub channel_id: i64,
     pub post_id: i64,
 }
 
-#[derive(Default)]
+impl LfgMessageRow {
+    pub fn message_id(&self) -> MessageId {
+        MessageId::new(self.id as u64)
+    }
+
+    pub fn channel_id(&self) -> ChannelId {
+        ChannelId::new(self.id as u64)
+    }
+
+    pub fn post_id(&self) -> ChannelId {
+        ChannelId::new(self.id as u64)
+    }
+}
+
 pub struct LfgPostWithMessages {
     pub post: LfgPostRow,
     pub messages: Vec<LfgMessageRow>,
