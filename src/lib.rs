@@ -37,7 +37,12 @@ fn create_lfg_embed(post: &LfgPostRow, owner_name: &str) -> CreateEmbed {
     let mut embed = CreateEmbed::new()
         .title(format!("{} - <t:{}>", &post.activity, timestamp))
         .field("Activity", &post.activity, true)
-        .field("Start Time", format!("<t:{}:R>", timestamp), true);
+        .field("Start Time", format!("<t:{}:R>", timestamp), true)
+        .field(
+            "Event Thread",
+            post.channel_id().mention().to_string(),
+            true,
+        );
 
     if !post.description.is_empty() {
         embed = embed.field("Description", &post.description, false)

@@ -23,6 +23,7 @@ pub struct LfgGuildRow {
     pub id: i64,
     pub channel_id: i64,
     pub role_id: Option<i64>,
+    pub scheduled_thread_id: Option<i64>,
 }
 
 impl LfgGuildRow {
@@ -32,5 +33,9 @@ impl LfgGuildRow {
 
     pub fn role_id(&self) -> Option<RoleId> {
         self.role_id.map(|id| RoleId::new(id as u64))
+    }
+
+    pub fn scheduled_thread_id(&self) -> Option<ChannelId> {
+        self.scheduled_thread_id.map(|id| ChannelId::new(id as u64))
     }
 }

@@ -97,7 +97,9 @@ impl LfgCreateModal {
                 ctx,
                 CreateForumPost::new(
                     format!("{} - {}", activity, start_time.format("%d %b %H:%M %Z")),
-                    CreateMessage::new().embed(embed).components(vec![row]),
+                    CreateMessage::new()
+                        .embed(embed.clone())
+                        .components(vec![row]),
                 )
                 .auto_archive_duration(AutoArchiveDuration::OneWeek)
                 .set_applied_tags(tags),
@@ -125,7 +127,14 @@ impl LfgCreateModal {
 
         post.id = thread.id.get() as i64;
 
-        post.save::<Db, PostManager>(pool).await.unwrap();
+        post.clone().save::<Db, PostManager>(pool).await.unwrap();
+
+        if let Some(thread_id) = lfg_guild.scheduled_thread_id() {
+            thread_id
+                .send_message(ctx, CreateMessage::new().embed(embed))
+                .await
+                .unwrap();
+        }
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Acknowledge)

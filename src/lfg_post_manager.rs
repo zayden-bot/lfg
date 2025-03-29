@@ -36,7 +36,7 @@ pub trait LfgPostManager<Db: sqlx::Database> {
     ) -> sqlx::Result<AnyQueryResult>;
 }
 
-#[derive(FromRow)]
+#[derive(FromRow, Clone)]
 pub struct LfgPostRow {
     pub id: i64,
     pub owner_id: i64,
