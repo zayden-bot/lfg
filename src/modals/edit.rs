@@ -4,7 +4,7 @@ use serenity::all::{
 use sqlx::Pool;
 use zayden_core::parse_modal_data;
 
-use crate::{create_lfg_embed, LfgPostManager, Result, TimezoneManager};
+use crate::{create_lfg_embed, LfgPostManager, LfgPostWithMessages, Result, TimezoneManager};
 
 use super::start_time;
 
@@ -45,16 +45,18 @@ impl LfgEditModal {
 
         let start_time = start_time(timezone, start_time_str)?;
 
-        let mut post = PostManager::get(pool, interaction.message.as_ref().unwrap().id)
-            .await
-            .unwrap();
+        let LfgPostWithMessages { mut post, messages } =
+            PostManager::get_with_messages(pool, interaction.channel_id.get())
+                .await
+                .unwrap();
+
         post.activity = activity.to_string();
         post.fireteam_size = fireteam_size as i16;
         post.description = description.to_string();
         post.timestamp = start_time.naive_utc();
         post.timezone = timezone.name().to_string();
 
-        let embed = create_lfg_embed(&post, &interaction.user.name, Some(interaction.channel_id));
+        let embed = create_lfg_embed(&post, &interaction.user.name, None);
 
         interaction
             .channel_id
@@ -79,12 +81,26 @@ impl LfgEditModal {
             .await
             .unwrap();
 
+        let embed = create_lfg_embed(&post, &interaction.user.name, Some(interaction.channel_id));
+
         post.save::<Db, PostManager>(pool).await.unwrap();
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Acknowledge)
             .await
             .unwrap();
+
+        for message in messages {
+            message
+                .channel_id()
+                .edit_message(
+                    ctx,
+                    message.message_id(),
+                    EditMessage::new().embed(embed.clone()),
+                )
+                .await
+                .unwrap();
+        }
 
         Ok(())
     }

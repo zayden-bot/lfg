@@ -6,8 +6,7 @@ use serenity::all::{CreateInteractionResponseMessage, Mentionable};
 use sqlx::Database;
 use sqlx::Pool;
 
-use crate::Result;
-use crate::{create_lfg_embed, LfgPostManager};
+use crate::{create_lfg_embed, LfgPostManager, LfgPostWithMessages, Result};
 
 pub struct KickComponent;
 
@@ -22,21 +21,34 @@ impl KickComponent {
             _ => unreachable!("User is required"),
         };
 
-        let mut post = Manager::get(pool, interaction.channel_id.get())
-            .await
-            .unwrap();
+        let LfgPostWithMessages { mut post, messages } =
+            Manager::get_with_messages(pool, interaction.channel_id.get())
+                .await
+                .unwrap();
 
         if post.kick(user) {
-            let embed =
-                create_lfg_embed(&post, &interaction.user.name, Some(interaction.channel_id));
+            let embed = create_lfg_embed(&post, &interaction.user.name, None);
 
-            let channel_id = post.channel_id();
-            channel_id
+            post.channel_id()
                 .edit_message(ctx, post.message_id(), EditMessage::new().embed(embed))
                 .await
                 .unwrap();
 
+            let embed = create_lfg_embed(&post, &interaction.user.name, Some(post.channel_id()));
+
             post.save::<Db, Manager>(pool).await.unwrap();
+
+            for message in messages {
+                message
+                    .channel_id()
+                    .edit_message(
+                        ctx,
+                        message.message_id(),
+                        EditMessage::new().embed(embed.clone()),
+                    )
+                    .await
+                    .unwrap();
+            }
 
             interaction
                 .create_response(ctx, CreateInteractionResponse::Acknowledge)

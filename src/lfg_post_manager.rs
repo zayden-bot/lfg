@@ -5,6 +5,8 @@ use sqlx::any::AnyQueryResult;
 use sqlx::prelude::FromRow;
 use sqlx::{Database, Pool};
 
+use crate::{Error, LfgMessageRow, Result};
+
 #[async_trait]
 pub trait LfgPostManager<Db: sqlx::Database> {
     async fn get_past(pool: &Pool<Db>) -> sqlx::Result<Vec<LfgPostRow>>;
@@ -120,18 +122,32 @@ impl LfgPostRow {
         self.fireteam.contains(&user) || self.alternatives.contains(&user)
     }
 
-    pub fn join(&mut self, user: impl Into<UserId>) {
-        let id = user.into().get() as i64;
+    pub fn join(&mut self, user: impl Into<UserId>, alternative: bool) -> Result<()> {
+        let user = user.into();
 
-        self.leave(id as u64);
-        self.fireteam.push(id);
-    }
+        if !alternative && self.fireteam().contains(&user) {
+            return Err(Error::AlreadyJoined);
+        }
 
-    pub fn join_alt(&mut self, id: impl Into<UserId>) {
-        let id = id.into().get() as i64;
+        if alternative && self.alternatives().contains(&user) {
+            return Err(Error::AlreadyJoined);
+        }
 
-        self.leave(id as u64);
-        self.alternatives.push(id);
+        if !alternative && self.is_full() {
+            return Err(Error::FireteamFull);
+        }
+
+        let id = user.get() as i64;
+
+        self.leave(user);
+
+        if alternative {
+            self.alternatives.push(id);
+        } else {
+            self.fireteam.push(id);
+        }
+
+        Ok(())
     }
 
     pub fn leave(&mut self, user: impl Into<UserId>) {
@@ -162,27 +178,6 @@ impl LfgPostRow {
         pool: &Pool<Db>,
     ) -> sqlx::Result<AnyQueryResult> {
         Manager::delete(pool, self.id as u64).await
-    }
-}
-
-#[derive(FromRow)]
-pub struct LfgMessageRow {
-    pub id: i64,
-    pub channel_id: i64,
-    pub post_id: i64,
-}
-
-impl LfgMessageRow {
-    pub fn message_id(&self) -> MessageId {
-        MessageId::new(self.id as u64)
-    }
-
-    pub fn channel_id(&self) -> ChannelId {
-        ChannelId::new(self.id as u64)
-    }
-
-    pub fn post_id(&self) -> ChannelId {
-        ChannelId::new(self.id as u64)
     }
 }
 

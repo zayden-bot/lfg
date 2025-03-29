@@ -1,8 +1,14 @@
+use serenity::all::{
+    ButtonStyle, ChannelId, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter,
+    Mentionable,
+};
+
 mod activities;
 mod components;
 mod error;
 pub mod events;
 mod lfg_guild_manager;
+mod lfg_message_manager;
 mod lfg_post_manager;
 mod modals;
 mod slash_command;
@@ -13,16 +19,10 @@ pub use components::{KickComponent, PostComponents, SettingsComponents, TagsComp
 pub use error::Error;
 use error::Result;
 pub use lfg_guild_manager::{LfgGuildManager, LfgGuildRow};
-pub use lfg_post_manager::{
-    close_old_posts, LfgMessageRow, LfgPostManager, LfgPostRow, LfgPostWithMessages,
-};
+pub use lfg_message_manager::{LfgMessageManager, LfgMessageRow};
+pub use lfg_post_manager::{close_old_posts, LfgPostManager, LfgPostRow, LfgPostWithMessages};
 pub use modals::{LfgCreateModal, LfgEditModal};
-use serenity::all::{
-    ButtonStyle, ChannelId, Context, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter,
-    Mentionable, UserId,
-};
 pub use slash_command::LfgCommand;
-use sqlx::{Database, Pool};
 pub use timezone_manager::TimezoneManager;
 
 fn create_lfg_embed(post: &LfgPostRow, owner_name: &str, thread: Option<ChannelId>) -> CreateEmbed {
@@ -85,51 +85,4 @@ fn create_main_row() -> CreateActionRow {
             .emoji('⚙')
             .style(ButtonStyle::Secondary),
     ])
-}
-
-async fn join_post<Db: Database, Manager: LfgPostManager<Db>>(
-    ctx: &Context,
-    pool: &Pool<Db>,
-    mut post: LfgPostRow,
-    user_id: impl Into<UserId>,
-    alternative: bool,
-) -> Result<CreateEmbed> {
-    if !alternative && post.is_full() {
-        return Err(Error::FireteamFull);
-    }
-
-    if alternative {
-        post.join_alt(user_id);
-    } else {
-        post.join(user_id);
-    }
-
-    let embed = create_lfg_embed(
-        &post,
-        &post.owner(ctx).await.unwrap().name,
-        Some(post.channel_id()),
-    );
-
-    post.save::<Db, Manager>(pool).await.unwrap();
-
-    Ok(embed)
-}
-
-async fn leave_post<Db: Database, Manager: LfgPostManager<Db>>(
-    ctx: &Context,
-    pool: &Pool<Db>,
-    mut post: LfgPostRow,
-    user_id: impl Into<UserId>,
-) -> Result<CreateEmbed> {
-    post.leave(user_id);
-
-    let embed = create_lfg_embed(
-        &post,
-        &post.owner(ctx).await.unwrap().name,
-        Some(post.channel_id()),
-    );
-
-    post.save::<Db, Manager>(pool).await.unwrap();
-
-    Ok(embed)
 }

@@ -1,10 +1,13 @@
 use serenity::all::{
     ButtonStyle, ComponentInteraction, Context, CreateActionRow, CreateButton,
-    CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, Mentionable,
+    CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, EditMessage,
+    Mentionable,
 };
 use sqlx::Pool;
 
-use crate::{create_lfg_embed, create_main_row, join_post, Error, LfgPostManager, Result};
+use crate::{
+    create_lfg_embed, create_main_row, Error, LfgPostManager, LfgPostWithMessages, Result,
+};
 
 pub struct PostComponents;
 
@@ -18,13 +21,18 @@ impl PostComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let post = Manager::get(pool, &interaction.message.id).await.unwrap();
+        let LfgPostWithMessages { mut post, messages } =
+            Manager::get_with_messages(pool, interaction.channel_id.get())
+                .await
+                .unwrap();
 
-        if post.fireteam().contains(&interaction.user.id) {
-            return Err(Error::AlreadyJoined);
-        }
+        post.join(interaction.user.id, false)?;
 
-        let embed = join_post::<Db, Manager>(ctx, pool, post, interaction.user.id, false).await?;
+        let owner_name = &post.owner(ctx).await.unwrap().name;
+        let thread_embed = create_lfg_embed(&post, owner_name, None);
+        let msg_embed = create_lfg_embed(&post, owner_name, Some(interaction.channel_id));
+
+        post.save::<Db, Manager>(pool).await.unwrap();
 
         interaction
             .channel_id
@@ -42,11 +50,23 @@ impl PostComponents {
             .create_response(
                 ctx,
                 CreateInteractionResponse::UpdateMessage(
-                    CreateInteractionResponseMessage::new().embed(embed),
+                    CreateInteractionResponseMessage::new().embed(thread_embed),
                 ),
             )
             .await
             .unwrap();
+
+        for message in messages {
+            message
+                .channel_id()
+                .edit_message(
+                    ctx,
+                    message.message_id(),
+                    EditMessage::new().embed(msg_embed.clone()),
+                )
+                .await
+                .unwrap();
+        }
 
         Ok(())
     }
@@ -60,15 +80,17 @@ impl PostComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let mut post = Manager::get(pool, interaction.message.id).await.unwrap();
+        let LfgPostWithMessages { mut post, messages } =
+            Manager::get_with_messages(pool, interaction.channel_id.get())
+                .await
+                .unwrap();
 
         post.leave(interaction.user.id);
 
-        let embed = create_lfg_embed(
-            &post,
-            &post.owner(ctx).await.unwrap().name,
-            Some(interaction.channel_id),
-        );
+        let owner_name = post.owner(ctx).await.unwrap().name;
+
+        let thread_embed = create_lfg_embed(&post, &owner_name, None);
+        let msg_embed = create_lfg_embed(&post, &owner_name, Some(interaction.channel_id));
 
         post.save::<Db, Manager>(pool).await.unwrap();
 
@@ -76,7 +98,7 @@ impl PostComponents {
             .create_response(
                 ctx,
                 CreateInteractionResponse::UpdateMessage(
-                    CreateInteractionResponseMessage::new().embed(embed),
+                    CreateInteractionResponseMessage::new().embed(thread_embed),
                 ),
             )
             .await
@@ -92,6 +114,18 @@ impl PostComponents {
             .await
             .unwrap();
 
+        for message in messages {
+            message
+                .channel_id()
+                .edit_message(
+                    ctx,
+                    message.message_id(),
+                    EditMessage::new().embed(msg_embed.clone()),
+                )
+                .await
+                .unwrap();
+        }
+
         Ok(())
     }
 
@@ -104,13 +138,18 @@ impl PostComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let post = Manager::get(pool, interaction.message.id).await.unwrap();
+        let LfgPostWithMessages { mut post, messages } =
+            Manager::get_with_messages(pool, interaction.channel_id.get())
+                .await
+                .unwrap();
 
-        if post.alternatives().contains(&interaction.user.id) {
-            return Err(Error::AlreadyJoined);
-        }
+        post.join(interaction.user.id, true)?;
 
-        let embed = join_post::<Db, Manager>(ctx, pool, post, interaction.user.id, true).await?;
+        let owner_name = &post.owner(ctx).await.unwrap().name;
+        let thread_embed = create_lfg_embed(&post, owner_name, None);
+        let msg_embed = create_lfg_embed(&post, owner_name, Some(interaction.channel_id));
+
+        post.save::<Db, Manager>(pool).await.unwrap();
 
         interaction
             .channel_id
@@ -128,11 +167,23 @@ impl PostComponents {
             .create_response(
                 ctx,
                 CreateInteractionResponse::UpdateMessage(
-                    CreateInteractionResponseMessage::new().embed(embed),
+                    CreateInteractionResponseMessage::new().embed(thread_embed),
                 ),
             )
             .await
             .unwrap();
+
+        for message in messages {
+            message
+                .channel_id()
+                .edit_message(
+                    ctx,
+                    message.message_id(),
+                    EditMessage::new().embed(msg_embed.clone()),
+                )
+                .await
+                .unwrap();
+        }
 
         Ok(())
     }

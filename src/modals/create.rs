@@ -5,6 +5,7 @@ use serenity::all::{
 use sqlx::Pool;
 use zayden_core::parse_modal_data;
 
+use crate::lfg_message_manager::{LfgMessageManager, LfgMessageRow};
 use crate::{
     create_lfg_embed, create_main_row, Error, LfgPostManager, LfgPostRow, Result, ACTIVITIES,
 };
@@ -15,7 +16,7 @@ use super::start_time;
 pub struct LfgCreateModal;
 
 impl LfgCreateModal {
-    pub async fn run<Db, GuildManager, PostManager, TzManager>(
+    pub async fn run<Db, GuildManager, PostManager, MessageManager, TzManager>(
         ctx: &Context,
         interaction: &ModalInteraction,
         pool: &Pool<Db>,
@@ -24,6 +25,7 @@ impl LfgCreateModal {
         Db: sqlx::Database,
         GuildManager: LfgGuildManager<Db>,
         PostManager: LfgPostManager<Db>,
+        MessageManager: LfgMessageManager<Db>,
         TzManager: TimezoneManager<Db>,
     {
         let guild_id = interaction.guild_id.ok_or(Error::MissingGuildId)?;
@@ -130,10 +132,13 @@ impl LfgCreateModal {
         post.save::<Db, PostManager>(pool).await.unwrap();
 
         if let Some(thread_id) = lfg_guild.scheduled_thread_id() {
-            thread_id
+            let msg = thread_id
                 .send_message(ctx, CreateMessage::new().embed(embed))
                 .await
                 .unwrap();
+
+            let row = LfgMessageRow::new(msg.id, msg.channel_id, thread.id);
+            MessageManager::save(pool, row).await.unwrap();
         }
 
         interaction

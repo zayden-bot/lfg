@@ -15,7 +15,10 @@ use zayden_core::parse_options;
 
 use crate::modals::modal_components;
 use crate::timezone_manager::TimezoneManager;
-use crate::{join_post, leave_post, Error, LfgGuildManager, LfgPostManager, Result, ACTIVITIES};
+use crate::{
+    create_lfg_embed, Error, LfgGuildManager, LfgPostManager, LfgPostWithMessages, Result,
+    ACTIVITIES,
+};
 
 pub struct LfgCommand;
 
@@ -250,13 +253,22 @@ impl LfgCommand {
             _ => false,
         };
 
-        let post = Manager::get(pool, thread.id.get()).await.unwrap();
+        let LfgPostWithMessages { mut post, messages } =
+            Manager::get_with_messages(pool, interaction.channel_id.get())
+                .await
+                .unwrap();
 
-        let embed = join_post::<Db, Manager>(ctx, pool, post, user_id, alternative).await?;
+        post.join(user_id, alternative)?;
+
+        let owner_name = &post.owner(ctx).await.unwrap().name;
+        let thread_embed = create_lfg_embed(&post, owner_name, None);
+        let msg_embed = create_lfg_embed(&post, owner_name, Some(thread.id));
+
+        post.save::<Db, Manager>(pool).await.unwrap();
 
         thread
             .id
-            .edit_message(ctx, thread.id.get(), EditMessage::new().embed(embed))
+            .edit_message(ctx, thread.id.get(), EditMessage::new().embed(thread_embed))
             .await
             .unwrap();
 
@@ -268,6 +280,18 @@ impl LfgCommand {
             )
             .await
             .unwrap();
+
+        for message in messages {
+            message
+                .channel_id()
+                .edit_message(
+                    ctx,
+                    message.message_id(),
+                    EditMessage::new().embed(msg_embed.clone()),
+                )
+                .await
+                .unwrap();
+        }
 
         Ok(())
     }
@@ -284,15 +308,22 @@ impl LfgCommand {
             unreachable!("Thread is required");
         };
 
-        let post = Manager::get(pool, thread.id.get()).await.unwrap();
+        let LfgPostWithMessages { mut post, messages } =
+            Manager::get_with_messages(pool, interaction.channel_id.get())
+                .await
+                .unwrap();
 
-        let embed = leave_post::<Db, Manager>(ctx, pool, post, interaction.user.id)
-            .await
-            .unwrap();
+        post.leave(interaction.user.id);
+
+        let owner_name = &post.owner(ctx).await.unwrap().name;
+        let thread_embed = create_lfg_embed(&post, owner_name, None);
+        let msg_embed = create_lfg_embed(&post, owner_name, Some(thread.id));
+
+        post.save::<Db, Manager>(pool).await.unwrap();
 
         thread
             .id
-            .edit_message(ctx, thread.id.get(), EditMessage::new().embed(embed))
+            .edit_message(ctx, thread.id.get(), EditMessage::new().embed(thread_embed))
             .await
             .unwrap();
 
@@ -304,6 +335,18 @@ impl LfgCommand {
             )
             .await
             .unwrap();
+
+        for message in messages {
+            message
+                .channel_id()
+                .edit_message(
+                    ctx,
+                    message.message_id(),
+                    EditMessage::new().embed(msg_embed.clone()),
+                )
+                .await
+                .unwrap();
+        }
 
         Ok(())
     }
