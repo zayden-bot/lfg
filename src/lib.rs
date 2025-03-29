@@ -16,14 +16,14 @@ pub use lfg_guild_manager::{LfgGuildManager, LfgGuildRow};
 pub use lfg_post_manager::{close_old_posts, LfgPostManager, LfgPostRow};
 pub use modals::{LfgCreateModal, LfgEditModal};
 use serenity::all::{
-    ButtonStyle, Context, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter,
+    ButtonStyle, ChannelId, Context, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter,
     Mentionable, UserId,
 };
 pub use slash_command::LfgCommand;
 use sqlx::{Database, Pool};
 pub use timezone_manager::TimezoneManager;
 
-fn create_lfg_embed(post: &LfgPostRow, owner_name: &str) -> CreateEmbed {
+fn create_lfg_embed(post: &LfgPostRow, owner_name: &str, thread: Option<ChannelId>) -> CreateEmbed {
     let timestamp = post.timestamp();
     let fireteam = post.fireteam();
     let alternatives = post.alternatives();
@@ -37,12 +37,11 @@ fn create_lfg_embed(post: &LfgPostRow, owner_name: &str) -> CreateEmbed {
     let mut embed = CreateEmbed::new()
         .title(format!("{} - <t:{}>", &post.activity, timestamp))
         .field("Activity", &post.activity, true)
-        .field("Start Time", format!("<t:{}:R>", timestamp), true)
-        .field(
-            "Event Thread",
-            post.channel_id().mention().to_string(),
-            true,
-        );
+        .field("Start Time", format!("<t:{}:R>", timestamp), true);
+
+    if let Some(thread) = thread {
+        embed = embed.field("Event Thread", thread.mention().to_string(), true);
+    }
 
     if !post.description.is_empty() {
         embed = embed.field("Description", &post.description, false)
@@ -103,7 +102,11 @@ async fn join_post<Db: Database, Manager: LfgPostManager<Db>>(
         post.join(user_id);
     }
 
-    let embed = create_lfg_embed(&post, &post.owner(ctx).await.unwrap().name);
+    let embed = create_lfg_embed(
+        &post,
+        &post.owner(ctx).await.unwrap().name,
+        Some(post.channel_id()),
+    );
 
     post.save::<Db, Manager>(pool).await.unwrap();
 
@@ -118,7 +121,11 @@ async fn leave_post<Db: Database, Manager: LfgPostManager<Db>>(
 ) -> Result<CreateEmbed> {
     post.leave(user_id);
 
-    let embed = create_lfg_embed(&post, &post.owner(ctx).await.unwrap().name);
+    let embed = create_lfg_embed(
+        &post,
+        &post.owner(ctx).await.unwrap().name,
+        Some(post.channel_id()),
+    );
 
     post.save::<Db, Manager>(pool).await.unwrap();
 

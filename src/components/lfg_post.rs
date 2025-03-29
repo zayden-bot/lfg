@@ -64,7 +64,11 @@ impl PostComponents {
 
         post.leave(interaction.user.id);
 
-        let embed = create_lfg_embed(&post, &post.owner(ctx).await.unwrap().name);
+        let embed = create_lfg_embed(
+            &post,
+            &post.owner(ctx).await.unwrap().name,
+            Some(interaction.channel_id),
+        );
 
         post.save::<Db, Manager>(pool).await.unwrap();
 

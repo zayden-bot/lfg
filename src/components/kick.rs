@@ -27,7 +27,8 @@ impl KickComponent {
             .unwrap();
 
         if post.kick(user) {
-            let embed = create_lfg_embed(&post, &interaction.user.name);
+            let embed =
+                create_lfg_embed(&post, &interaction.user.name, Some(interaction.channel_id));
 
             let channel_id = post.channel_id();
             channel_id

@@ -61,7 +61,7 @@ impl LfgCreateModal {
             fireteam_size,
         );
 
-        let embed = create_lfg_embed(&post, &interaction.user.name);
+        let embed = create_lfg_embed(&post, &interaction.user.name, None);
 
         let row = create_main_row();
 
@@ -97,9 +97,7 @@ impl LfgCreateModal {
                 ctx,
                 CreateForumPost::new(
                     format!("{} - {}", activity, start_time.format("%d %b %H:%M %Z")),
-                    CreateMessage::new()
-                        .embed(embed.clone())
-                        .components(vec![row]),
+                    CreateMessage::new().embed(embed).components(vec![row]),
                 )
                 .auto_archive_duration(AutoArchiveDuration::OneWeek)
                 .set_applied_tags(tags),
@@ -127,7 +125,9 @@ impl LfgCreateModal {
 
         post.id = thread.id.get() as i64;
 
-        post.clone().save::<Db, PostManager>(pool).await.unwrap();
+        let embed = create_lfg_embed(&post, &interaction.user.name, Some(thread.id));
+
+        post.save::<Db, PostManager>(pool).await.unwrap();
 
         if let Some(thread_id) = lfg_guild.scheduled_thread_id() {
             thread_id

@@ -54,7 +54,7 @@ impl LfgEditModal {
         post.timestamp = start_time.naive_utc();
         post.timezone = timezone.name().to_string();
 
-        let embed = create_lfg_embed(&post, &interaction.user.name);
+        let embed = create_lfg_embed(&post, &interaction.user.name, Some(interaction.channel_id));
 
         interaction
             .channel_id
