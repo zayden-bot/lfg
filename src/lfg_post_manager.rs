@@ -24,7 +24,7 @@ pub trait LfgPostManager<Db: sqlx::Database> {
     ) -> sqlx::Result<AnyQueryResult>;
 }
 
-#[derive(FromRow, Clone)]
+#[derive(FromRow, Clone, Default)]
 pub struct LfgPostRow {
     pub id: i64,
     pub owner_id: i64,
@@ -160,16 +160,17 @@ impl LfgPostRow {
     }
 }
 
-#[derive(FromRow)]
+#[derive(FromRow, Default)]
 pub struct LfgMessageRow {
-    id: i64,
-    channel_id: i64,
-    post_id: i64,
+    pub id: i64,
+    pub channel_id: i64,
+    pub post_id: i64,
 }
 
+#[derive(Default)]
 pub struct LfgPostWithMessages {
-    post: LfgPostRow,
-    messages: Vec<LfgMessageRow>,
+    pub post: LfgPostRow,
+    pub messages: Vec<LfgMessageRow>,
 }
 
 pub async fn close_old_posts<Db: Database, Manager: LfgPostManager<Db>>(
