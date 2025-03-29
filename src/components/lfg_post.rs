@@ -3,26 +3,28 @@ use serenity::all::{
     CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, EditMessage,
     Mentionable,
 };
-use sqlx::Pool;
+use sqlx::{Database, Pool};
 
 use crate::{
-    create_lfg_embed, create_main_row, Error, LfgPostManager, LfgPostWithMessages, Result,
+    create_lfg_embed, create_main_row, Error, LfgMessageManager, LfgPostManager,
+    LfgPostWithMessages, Result,
 };
 
 pub struct PostComponents;
 
 impl PostComponents {
-    pub async fn join<Db, Manager>(
+    pub async fn join<Db, PostManager, MessageManager>(
         ctx: &Context,
         interaction: &ComponentInteraction,
         pool: &Pool<Db>,
     ) -> Result<()>
     where
-        Db: sqlx::Database,
-        Manager: LfgPostManager<Db>,
+        Db: Database,
+        PostManager: LfgPostManager<Db> + Send,
+        MessageManager: LfgMessageManager<Db>,
     {
         let LfgPostWithMessages { mut post, messages } =
-            Manager::get_with_messages(pool, interaction.channel_id.get())
+            PostManager::get_with_messages::<MessageManager>(pool, interaction.channel_id.get())
                 .await
                 .unwrap();
 
@@ -32,7 +34,7 @@ impl PostComponents {
         let thread_embed = create_lfg_embed(&post, owner_name, None);
         let msg_embed = create_lfg_embed(&post, owner_name, Some(interaction.channel_id));
 
-        post.save::<Db, Manager>(pool).await.unwrap();
+        post.save::<Db, PostManager>(pool).await.unwrap();
 
         interaction
             .channel_id
@@ -71,17 +73,18 @@ impl PostComponents {
         Ok(())
     }
 
-    pub async fn leave<Db, Manager>(
+    pub async fn leave<Db, PostManager, MessageManager>(
         ctx: &Context,
         interaction: &ComponentInteraction,
         pool: &Pool<Db>,
     ) -> Result<()>
     where
-        Db: sqlx::Database,
-        Manager: LfgPostManager<Db>,
+        Db: Database,
+        PostManager: LfgPostManager<Db> + Send,
+        MessageManager: LfgMessageManager<Db>,
     {
         let LfgPostWithMessages { mut post, messages } =
-            Manager::get_with_messages(pool, interaction.channel_id.get())
+            PostManager::get_with_messages::<MessageManager>(pool, interaction.channel_id.get())
                 .await
                 .unwrap();
 
@@ -92,7 +95,7 @@ impl PostComponents {
         let thread_embed = create_lfg_embed(&post, &owner_name, None);
         let msg_embed = create_lfg_embed(&post, &owner_name, Some(interaction.channel_id));
 
-        post.save::<Db, Manager>(pool).await.unwrap();
+        post.save::<Db, PostManager>(pool).await.unwrap();
 
         interaction
             .create_response(
@@ -129,17 +132,18 @@ impl PostComponents {
         Ok(())
     }
 
-    pub async fn alternative<Db, Manager>(
+    pub async fn alternative<Db, PostManager, MessageManager>(
         ctx: &Context,
         interaction: &ComponentInteraction,
         pool: &Pool<Db>,
     ) -> Result<()>
     where
         Db: sqlx::Database,
-        Manager: LfgPostManager<Db>,
+        PostManager: LfgPostManager<Db> + Send,
+        MessageManager: LfgMessageManager<Db>,
     {
         let LfgPostWithMessages { mut post, messages } =
-            Manager::get_with_messages(pool, interaction.channel_id.get())
+            PostManager::get_with_messages::<MessageManager>(pool, interaction.channel_id.get())
                 .await
                 .unwrap();
 
@@ -149,7 +153,7 @@ impl PostComponents {
         let thread_embed = create_lfg_embed(&post, owner_name, None);
         let msg_embed = create_lfg_embed(&post, owner_name, Some(interaction.channel_id));
 
-        post.save::<Db, Manager>(pool).await.unwrap();
+        post.save::<Db, PostManager>(pool).await.unwrap();
 
         interaction
             .channel_id

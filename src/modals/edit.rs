@@ -4,21 +4,25 @@ use serenity::all::{
 use sqlx::Pool;
 use zayden_core::parse_modal_data;
 
-use crate::{create_lfg_embed, LfgPostManager, LfgPostWithMessages, Result, TimezoneManager};
+use crate::{
+    create_lfg_embed, LfgMessageManager, LfgPostManager, LfgPostWithMessages, Result,
+    TimezoneManager,
+};
 
 use super::start_time;
 
 pub struct LfgEditModal;
 
 impl LfgEditModal {
-    pub async fn run<Db, PostManager, TzManager>(
+    pub async fn run<Db, PostManager, MessageManager, TzManager>(
         ctx: &Context,
         interaction: &ModalInteraction,
         pool: &Pool<Db>,
     ) -> Result<()>
     where
         Db: sqlx::Database,
-        PostManager: LfgPostManager<Db>,
+        PostManager: LfgPostManager<Db> + Send,
+        MessageManager: LfgMessageManager<Db>,
         TzManager: TimezoneManager<Db>,
     {
         let mut inputs = parse_modal_data(&interaction.data.components);
@@ -46,7 +50,7 @@ impl LfgEditModal {
         let start_time = start_time(timezone, start_time_str)?;
 
         let LfgPostWithMessages { mut post, messages } =
-            PostManager::get_with_messages(pool, interaction.channel_id.get())
+            PostManager::get_with_messages::<MessageManager>(pool, interaction.channel_id.get())
                 .await
                 .unwrap();
 

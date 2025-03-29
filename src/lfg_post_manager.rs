@@ -5,7 +5,7 @@ use sqlx::any::AnyQueryResult;
 use sqlx::prelude::FromRow;
 use sqlx::{Database, Pool};
 
-use crate::{Error, LfgMessageRow, Result};
+use crate::{Error, LfgMessageManager, LfgMessageRow, Result};
 
 #[async_trait]
 pub trait LfgPostManager<Db: sqlx::Database> {
@@ -13,10 +13,18 @@ pub trait LfgPostManager<Db: sqlx::Database> {
 
     async fn get(pool: &Pool<Db>, id: impl Into<MessageId> + Send) -> sqlx::Result<LfgPostRow>;
 
-    async fn get_with_messages(
+    async fn get_with_messages<Manager: LfgMessageManager<Db>>(
         pool: &Pool<Db>,
         id: impl Into<MessageId> + Send,
-    ) -> sqlx::Result<LfgPostWithMessages>;
+    ) -> sqlx::Result<LfgPostWithMessages> {
+        let id: MessageId = id.into();
+
+        let post = Self::get(pool, id).await?;
+
+        let messages = Manager::get_by_post_id(pool, id.get()).await?;
+
+        Ok(LfgPostWithMessages { post, messages })
+    }
 
     async fn get_upcoming_by_user(
         pool: &Pool<Db>,

@@ -16,14 +16,14 @@ use zayden_core::parse_options;
 use crate::modals::modal_components;
 use crate::timezone_manager::TimezoneManager;
 use crate::{
-    create_lfg_embed, Error, LfgGuildManager, LfgPostManager, LfgPostWithMessages, Result,
-    ACTIVITIES,
+    create_lfg_embed, Error, LfgGuildManager, LfgMessageManager, LfgPostManager,
+    LfgPostWithMessages, Result, ACTIVITIES,
 };
 
 pub struct LfgCommand;
 
 impl LfgCommand {
-    pub async fn run<Db, GuildManager, PostManager, TzManager>(
+    pub async fn run<Db, GuildManager, PostManager, MessageManager, TzManager>(
         ctx: &Context,
         interaction: &CommandInteraction,
         pool: &Pool<Db>,
@@ -31,7 +31,8 @@ impl LfgCommand {
     where
         Db: sqlx::Database,
         GuildManager: LfgGuildManager<Db>,
-        PostManager: LfgPostManager<Db>,
+        PostManager: LfgPostManager<Db> + Send,
+        MessageManager: LfgMessageManager<Db>,
         TzManager: TimezoneManager<Db>,
     {
         let command = interaction.data.options().pop().unwrap();
@@ -47,8 +48,14 @@ impl LfgCommand {
             "setup" => Self::setup::<Db, GuildManager>(ctx, interaction, pool, options).await?,
             "create" => Self::create::<Db, TzManager>(ctx, interaction, pool, options).await?,
             "tags" => Self::tags::<Db, PostManager>(ctx, interaction, pool, options).await?,
-            "join" => Self::join::<Db, PostManager>(ctx, interaction, pool, options).await?,
-            "leave" => Self::leave::<Db, PostManager>(ctx, interaction, pool, options).await?,
+            "join" => {
+                Self::join::<Db, PostManager, MessageManager>(ctx, interaction, pool, options)
+                    .await?
+            }
+            "leave" => {
+                Self::leave::<Db, PostManager, MessageManager>(ctx, interaction, pool, options)
+                    .await?
+            }
             "joined" => Self::joined::<Db, PostManager>(ctx, interaction, pool).await,
             "timezone" => Self::timezone::<Db, TzManager>(ctx, interaction, pool, options).await?,
             _ => unreachable!("Invalid subcommand"),
@@ -230,7 +237,11 @@ impl LfgCommand {
         Ok(())
     }
 
-    async fn join<Db: Database, Manager: LfgPostManager<Db>>(
+    async fn join<
+        Db: Database,
+        PostManager: LfgPostManager<Db> + Send,
+        MessageManager: LfgMessageManager<Db>,
+    >(
         ctx: &Context,
         interaction: &CommandInteraction,
         pool: &Pool<Db>,
@@ -254,7 +265,7 @@ impl LfgCommand {
         };
 
         let LfgPostWithMessages { mut post, messages } =
-            Manager::get_with_messages(pool, interaction.channel_id.get())
+            PostManager::get_with_messages::<MessageManager>(pool, interaction.channel_id.get())
                 .await
                 .unwrap();
 
@@ -264,7 +275,7 @@ impl LfgCommand {
         let thread_embed = create_lfg_embed(&post, owner_name, None);
         let msg_embed = create_lfg_embed(&post, owner_name, Some(thread.id));
 
-        post.save::<Db, Manager>(pool).await.unwrap();
+        post.save::<Db, PostManager>(pool).await.unwrap();
 
         thread
             .id
@@ -296,12 +307,17 @@ impl LfgCommand {
         Ok(())
     }
 
-    async fn leave<Db: Database, Manager: LfgPostManager<Db>>(
+    async fn leave<Db, PostManager, MessageManager>(
         ctx: &Context,
         interaction: &CommandInteraction,
         pool: &Pool<Db>,
         mut options: HashMap<&str, ResolvedValue<'_>>,
-    ) -> Result<()> {
+    ) -> Result<()>
+    where
+        Db: sqlx::Database,
+        PostManager: LfgPostManager<Db> + Send,
+        MessageManager: LfgMessageManager<Db>,
+    {
         interaction.defer_ephemeral(ctx).await.unwrap();
 
         let Some(ResolvedValue::Channel(thread)) = options.remove("channel") else {
@@ -309,7 +325,7 @@ impl LfgCommand {
         };
 
         let LfgPostWithMessages { mut post, messages } =
-            Manager::get_with_messages(pool, interaction.channel_id.get())
+            PostManager::get_with_messages::<MessageManager>(pool, interaction.channel_id.get())
                 .await
                 .unwrap();
 
@@ -319,7 +335,7 @@ impl LfgCommand {
         let thread_embed = create_lfg_embed(&post, owner_name, None);
         let msg_embed = create_lfg_embed(&post, owner_name, Some(thread.id));
 
-        post.save::<Db, Manager>(pool).await.unwrap();
+        post.save::<Db, PostManager>(pool).await.unwrap();
 
         thread
             .id

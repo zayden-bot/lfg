@@ -6,23 +6,28 @@ use serenity::all::{CreateInteractionResponseMessage, Mentionable};
 use sqlx::Database;
 use sqlx::Pool;
 
-use crate::{create_lfg_embed, LfgPostManager, LfgPostWithMessages, Result};
+use crate::{create_lfg_embed, LfgMessageManager, LfgPostManager, LfgPostWithMessages, Result};
 
 pub struct KickComponent;
 
 impl KickComponent {
-    pub async fn run<Db: Database, Manager: LfgPostManager<Db>>(
+    pub async fn run<Db, PostManager, MessageManager>(
         ctx: &Context,
         interaction: &ComponentInteraction,
         pool: &Pool<Db>,
-    ) -> Result<()> {
+    ) -> Result<()>
+    where
+        Db: Database,
+        PostManager: LfgPostManager<Db> + Send,
+        MessageManager: LfgMessageManager<Db>,
+    {
         let user = match &interaction.data.kind {
             ComponentInteractionDataKind::UserSelect { values } => values[0],
             _ => unreachable!("User is required"),
         };
 
         let LfgPostWithMessages { mut post, messages } =
-            Manager::get_with_messages(pool, interaction.channel_id.get())
+            PostManager::get_with_messages::<MessageManager>(pool, interaction.channel_id.get())
                 .await
                 .unwrap();
 
@@ -36,7 +41,7 @@ impl KickComponent {
 
             let embed = create_lfg_embed(&post, &interaction.user.name, Some(post.channel_id()));
 
-            post.save::<Db, Manager>(pool).await.unwrap();
+            post.save::<Db, PostManager>(pool).await.unwrap();
 
             for message in messages {
                 message
