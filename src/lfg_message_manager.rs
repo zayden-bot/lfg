@@ -4,12 +4,17 @@ use sqlx::{FromRow, Pool};
 
 #[async_trait]
 pub trait LfgMessageManager<Db: sqlx::Database> {
-    async fn get(pool: &Pool<Db>, id: impl Into<MessageId> + Send) -> sqlx::Result<LfgMessageRow>;
+    async fn get(
+        pool: &Pool<Db>,
+        id: impl Into<MessageId> + Send,
+    ) -> sqlx::Result<Option<LfgMessageRow>>;
 
     async fn get_by_post_id(
         pool: &Pool<Db>,
         id: impl Into<ChannelId> + Send,
     ) -> sqlx::Result<Vec<LfgMessageRow>>;
+
+    async fn delete(pool: &Pool<Db>, id: impl Into<MessageId> + Send) -> sqlx::Result<()>;
 
     async fn save(pool: &Pool<Db>, row: LfgMessageRow) -> sqlx::Result<()>;
 }
