@@ -12,6 +12,7 @@ pub enum Error {
     InvalidDateTime(String),
     TagRequired,
     AlreadyJoined,
+    InvalidChannel,
 }
 
 impl Error {
@@ -41,6 +42,7 @@ impl ErrorResponse for Error {
             Self::InvalidDateTime(msg) => msg,
             Self::TagRequired => "Unable to parse Activity and apply necessary tags. Please fix the Activity field and use the edit button to update after creating the post.",
             Self::AlreadyJoined => "You have already joined this LFG.",
+            Self::InvalidChannel => "Invalid LFG channel."
         }
     }
 }

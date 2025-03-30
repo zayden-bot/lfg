@@ -5,7 +5,7 @@ use sqlx::Pool;
 use zayden_core::parse_modal_data;
 
 use crate::{
-    create_lfg_embed, LfgMessageManager, LfgPostManager, LfgPostWithMessages, Result,
+    create_lfg_embed, Error, LfgMessageManager, LfgPostManager, LfgPostWithMessages, Result,
     TimezoneManager,
 };
 
@@ -49,10 +49,18 @@ impl LfgEditModal {
 
         let start_time = start_time(timezone, start_time_str)?;
 
-        let LfgPostWithMessages { mut post, messages } =
-            PostManager::get_with_messages::<MessageManager>(pool, interaction.channel_id.get())
-                .await
-                .unwrap();
+        let post = match PostManager::get_with_messages::<MessageManager>(
+            pool,
+            interaction.channel_id.get(),
+        )
+        .await
+        {
+            Ok(post) => post,
+            Err(sqlx::Error::RowNotFound) => return Err(Error::InvalidChannel),
+            r => r.unwrap(),
+        };
+
+        let LfgPostWithMessages { mut post, messages } = post;
 
         post.activity = activity.to_string();
         post.fireteam_size = fireteam_size as i16;
