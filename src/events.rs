@@ -11,7 +11,7 @@ pub async fn thread_delete<Db: Database, Manager: LfgPostManager<Db>>(
 }
 
 pub async fn message_delete<Db: Database, Manager: LfgMessageManager<Db>>(
-    event: MessageDeleteEvent,
+    event: &MessageDeleteEvent,
     pool: &Pool<Db>,
 ) {
     let _ = Manager::delete(pool, event.message_id).await;
