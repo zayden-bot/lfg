@@ -6,8 +6,8 @@ use serenity::all::{
 use sqlx::{Database, Pool};
 
 use crate::{
-    create_lfg_embed, create_main_row, Error, LfgMessageManager, LfgPostManager,
-    LfgPostWithMessages, Result,
+    Error, LfgMessageManager, LfgPostManager, LfgPostWithMessages, Result, create_lfg_embed,
+    create_main_row,
 };
 
 pub struct PostComponents;
@@ -204,7 +204,7 @@ impl PostComponents {
         let post = Manager::get(pool, interaction.message.id).await.unwrap();
 
         if interaction.user.id != post.owner_id() {
-            return Err(Error::permission_denied(post.owner_id()));
+            return Err(Error::PermissionDenied(post.owner_id()));
         }
 
         let main_row = create_main_row();

@@ -22,7 +22,7 @@ impl SettingsComponents {
         let post = Manager::get(pool, interaction.message.id).await.unwrap();
 
         if interaction.user.id != post.owner_id() {
-            return Err(Error::permission_denied(post.owner_id()));
+            return Err(Error::PermissionDenied(post.owner_id()));
         }
 
         let row = modal_components(
@@ -54,7 +54,7 @@ impl SettingsComponents {
         let post = Manager::get(pool, interaction.message.id).await.unwrap();
 
         if interaction.user.id != post.owner_id() {
-            return Err(Error::permission_denied(post.owner_id()));
+            return Err(Error::PermissionDenied(post.owner_id()));
         }
 
         let row = modal_components(
@@ -85,7 +85,7 @@ impl SettingsComponents {
         let post = Manager::get(pool, interaction.message.id).await.unwrap();
 
         if interaction.user.id != post.owner_id() {
-            return Err(Error::permission_denied(post.owner_id()));
+            return Err(Error::PermissionDenied(post.owner_id()));
         }
 
         let select_menu = CreateSelectMenu::new(
@@ -123,7 +123,7 @@ impl SettingsComponents {
         let post = Manager::get(pool, interaction.message.id).await.unwrap();
 
         if interaction.user.id != post.owner_id() {
-            return Err(Error::permission_denied(post.owner_id()));
+            return Err(Error::PermissionDenied(post.owner_id()));
         }
 
         post.delete::<Db, Manager>(pool).await.unwrap();

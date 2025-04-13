@@ -47,7 +47,7 @@ pub fn modal_components(
 
 fn start_time(timezone: Tz, start_time_str: &str) -> Result<DateTime<Tz>> {
     let naive_dt = NaiveDateTime::parse_from_str(start_time_str, "%Y-%m-%d %H:%M")
-        .map_err(|_| Error::invalid_date_time("YYYY-MM-DD HH:MM"))?;
+        .map_err(|_| Error::InvalidDateTime("YYYY-MM-DD HH:MM".to_string()))?;
 
     let st = timezone
         .from_local_datetime(&naive_dt)

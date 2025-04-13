@@ -16,8 +16,8 @@ use zayden_core::parse_options;
 use crate::modals::modal_components;
 use crate::timezone_manager::TimezoneManager;
 use crate::{
-    create_lfg_embed, Error, LfgGuildManager, LfgMessageManager, LfgPostManager,
-    LfgPostWithMessages, Result, ACTIVITIES,
+    ACTIVITIES, Error, LfgGuildManager, LfgMessageManager, LfgPostManager, LfgPostWithMessages,
+    Result, create_lfg_embed,
 };
 
 pub struct LfgCommand;
@@ -143,7 +143,7 @@ impl LfgCommand {
             .unwrap();
 
         if post.owner_id() != interaction.user.id {
-            return Err(Error::permission_denied(post.owner_id()));
+            return Err(Error::PermissionDenied(post.owner_id()));
         }
 
         let thread_channel = interaction
