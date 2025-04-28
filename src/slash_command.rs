@@ -14,10 +14,11 @@ use sqlx::{Database, Pool};
 use zayden_core::parse_options;
 
 use crate::modals::modal_components;
+use crate::templates::{DefaultTemplate, Template};
 use crate::timezone_manager::TimezoneManager;
 use crate::{
     ACTIVITIES, Error, LfgGuildManager, LfgMessageManager, LfgPostManager, LfgPostWithMessages,
-    Result, create_lfg_embed,
+    Result,
 };
 
 pub struct LfgCommand;
@@ -108,6 +109,11 @@ impl LfgCommand {
             unreachable!("Activity is required");
         };
 
+        let template = match options.remove("template") {
+            Some(ResolvedValue::String(s)) => s.parse().unwrap(),
+            _ => 0,
+        };
+
         let timezone = Manager::get(pool, interaction.user.id, &interaction.locale)
             .await
             .unwrap();
@@ -120,7 +126,8 @@ impl LfgCommand {
 
         let row = modal_components(activity, now, fireteam_size, None);
 
-        let modal = CreateModal::new("lfg_create", "Create Event").components(row);
+        let modal =
+            CreateModal::new(format!("lfg_create_{}", template), "Create Event").components(row);
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Modal(modal))
@@ -272,8 +279,8 @@ impl LfgCommand {
         post.join(user_id, alternative)?;
 
         let owner_name = &post.owner(ctx).await.unwrap().name;
-        let thread_embed = create_lfg_embed(&post, owner_name, None);
-        let msg_embed = create_lfg_embed(&post, owner_name, Some(thread.id));
+        let thread_embed = DefaultTemplate::embed(&post, owner_name, None);
+        let msg_embed = DefaultTemplate::embed(&post, owner_name, Some(thread.id));
 
         post.save::<Db, PostManager>(pool).await.unwrap();
 
@@ -332,8 +339,8 @@ impl LfgCommand {
         post.leave(interaction.user.id);
 
         let owner_name = &post.owner(ctx).await.unwrap().name;
-        let thread_embed = create_lfg_embed(&post, owner_name, None);
-        let msg_embed = create_lfg_embed(&post, owner_name, Some(thread.id));
+        let thread_embed = DefaultTemplate::embed(&post, owner_name, None);
+        let msg_embed = DefaultTemplate::embed(&post, owner_name, Some(thread.id));
 
         post.save::<Db, PostManager>(pool).await.unwrap();
 
@@ -483,6 +490,14 @@ impl LfgCommand {
             )
             .required(true)
             .set_autocomplete(true),
+        )
+        .add_sub_option(
+            CreateCommandOption::new(
+                CommandOptionType::String,
+                "template",
+                "The embed template for the event",
+            )
+            .add_string_choice("Default", "0"),
         );
 
         let tags = CreateCommandOption::new(

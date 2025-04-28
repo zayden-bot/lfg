@@ -6,9 +6,8 @@ use sqlx::Pool;
 use zayden_core::parse_modal_data;
 
 use crate::lfg_message_manager::{LfgMessageManager, LfgMessageRow};
-use crate::{
-    create_lfg_embed, create_main_row, Error, LfgPostManager, LfgPostRow, Result, ACTIVITIES,
-};
+use crate::templates::{DefaultTemplate, Template};
+use crate::{ACTIVITIES, Error, LfgPostManager, LfgPostRow, Result};
 use crate::{LfgGuildManager, TimezoneManager};
 
 use super::start_time;
@@ -63,9 +62,9 @@ impl LfgCreateModal {
             fireteam_size,
         );
 
-        let embed = create_lfg_embed(&post, &interaction.user.name, None);
+        let embed = DefaultTemplate::embed(&post, &interaction.user.name, None);
 
-        let row = create_main_row();
+        let row = DefaultTemplate::main_row();
 
         let lfg_guild = GuildManager::get(pool, guild_id)
             .await
@@ -127,7 +126,7 @@ impl LfgCreateModal {
 
         post.id = thread.id.get() as i64;
 
-        let embed = create_lfg_embed(&post, &interaction.user.name, Some(thread.id));
+        let embed = DefaultTemplate::embed(&post, &interaction.user.name, Some(thread.id));
 
         post.save::<Db, PostManager>(pool).await.unwrap();
 

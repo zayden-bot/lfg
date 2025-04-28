@@ -4,9 +4,9 @@ use serenity::all::{
 use sqlx::Pool;
 use zayden_core::parse_modal_data;
 
+use crate::templates::{DefaultTemplate, Template};
 use crate::{
-    create_lfg_embed, Error, LfgMessageManager, LfgPostManager, LfgPostWithMessages, Result,
-    TimezoneManager,
+    Error, LfgMessageManager, LfgPostManager, LfgPostWithMessages, Result, TimezoneManager,
 };
 
 use super::start_time;
@@ -68,7 +68,7 @@ impl LfgEditModal {
         post.timestamp = start_time.naive_utc();
         post.timezone = timezone.name().to_string();
 
-        let embed = create_lfg_embed(&post, &interaction.user.name, None);
+        let embed = DefaultTemplate::embed(&post, &interaction.user.name, None);
 
         interaction
             .channel_id
@@ -93,7 +93,8 @@ impl LfgEditModal {
             .await
             .unwrap();
 
-        let embed = create_lfg_embed(&post, &interaction.user.name, Some(interaction.channel_id));
+        let embed =
+            DefaultTemplate::embed(&post, &interaction.user.name, Some(interaction.channel_id));
 
         post.save::<Db, PostManager>(pool).await.unwrap();
 

@@ -1,14 +1,11 @@
 use serenity::all::{
-    ButtonStyle, ComponentInteraction, Context, CreateActionRow, CreateButton,
-    CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, EditMessage,
-    Mentionable,
+    ComponentInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
+    CreateMessage, EditMessage, Mentionable,
 };
 use sqlx::{Database, Pool};
 
-use crate::{
-    Error, LfgMessageManager, LfgPostManager, LfgPostWithMessages, Result, create_lfg_embed,
-    create_main_row,
-};
+use crate::templates::{DefaultTemplate, Template};
+use crate::{Error, LfgMessageManager, LfgPostManager, LfgPostWithMessages, Result};
 
 pub struct PostComponents;
 
@@ -31,8 +28,8 @@ impl PostComponents {
         post.join(interaction.user.id, false)?;
 
         let owner_name = &post.owner(ctx).await.unwrap().name;
-        let thread_embed = create_lfg_embed(&post, owner_name, None);
-        let msg_embed = create_lfg_embed(&post, owner_name, Some(interaction.channel_id));
+        let thread_embed = DefaultTemplate::embed(&post, owner_name, None);
+        let msg_embed = DefaultTemplate::embed(&post, owner_name, Some(interaction.channel_id));
 
         post.save::<Db, PostManager>(pool).await.unwrap();
 
@@ -92,8 +89,8 @@ impl PostComponents {
 
         let owner_name = post.owner(ctx).await.unwrap().name;
 
-        let thread_embed = create_lfg_embed(&post, &owner_name, None);
-        let msg_embed = create_lfg_embed(&post, &owner_name, Some(interaction.channel_id));
+        let thread_embed = DefaultTemplate::embed(&post, &owner_name, None);
+        let msg_embed = DefaultTemplate::embed(&post, &owner_name, Some(interaction.channel_id));
 
         post.save::<Db, PostManager>(pool).await.unwrap();
 
@@ -150,8 +147,8 @@ impl PostComponents {
         post.join(interaction.user.id, true)?;
 
         let owner_name = &post.owner(ctx).await.unwrap().name;
-        let thread_embed = create_lfg_embed(&post, owner_name, None);
-        let msg_embed = create_lfg_embed(&post, owner_name, Some(interaction.channel_id));
+        let thread_embed = DefaultTemplate::embed(&post, owner_name, None);
+        let msg_embed = DefaultTemplate::embed(&post, owner_name, Some(interaction.channel_id));
 
         post.save::<Db, PostManager>(pool).await.unwrap();
 
@@ -207,21 +204,8 @@ impl PostComponents {
             return Err(Error::PermissionDenied(post.owner_id()));
         }
 
-        let main_row = create_main_row();
-        let settings_row = CreateActionRow::Buttons(vec![
-            CreateButton::new("lfg_edit")
-                .label("Edit")
-                .style(ButtonStyle::Secondary),
-            CreateButton::new("lfg_copy")
-                .label("Copy")
-                .style(ButtonStyle::Secondary),
-            CreateButton::new("lfg_kick")
-                .label("Kick")
-                .style(ButtonStyle::Secondary),
-            CreateButton::new("lfg_delete")
-                .label("Delete")
-                .style(ButtonStyle::Danger),
-        ]);
+        let main_row = DefaultTemplate::main_row();
+        let settings_row = DefaultTemplate::settings_row();
 
         interaction
             .create_response(
