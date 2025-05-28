@@ -13,6 +13,8 @@ pub enum Error {
     TagRequired,
     AlreadyJoined,
     InvalidChannel,
+
+    Serenity(serenity::Error),
 }
 
 impl std::fmt::Display for Error {
@@ -42,8 +44,15 @@ impl std::fmt::Display for Error {
             }
             Self::AlreadyJoined => write!(f, "You have already joined this LFG."),
             Self::InvalidChannel => write!(f, "Invalid LFG channel."),
+            _ => write!(f, "Unhandled error"),
         }
     }
 }
 
 impl std::error::Error for Error {}
+
+impl From<serenity::Error> for Error {
+    fn from(value: serenity::Error) -> Self {
+        Self::Serenity(value)
+    }
+}

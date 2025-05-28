@@ -52,8 +52,7 @@ impl PostComponents {
                     CreateInteractionResponseMessage::new().embed(thread_embed),
                 ),
             )
-            .await
-            .unwrap();
+            .await?;
 
         for message in messages {
             message
