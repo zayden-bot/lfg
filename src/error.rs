@@ -15,6 +15,7 @@ pub enum Error {
     InvalidChannel,
 
     Serenity(serenity::Error),
+    Sqlx(sqlx::Error),
 }
 
 impl std::fmt::Display for Error {
@@ -54,5 +55,11 @@ impl std::error::Error for Error {}
 impl From<serenity::Error> for Error {
     fn from(value: serenity::Error) -> Self {
         Self::Serenity(value)
+    }
+}
+
+impl From<sqlx::Error> for Error {
+    fn from(value: sqlx::Error) -> Self {
+        Self::Sqlx(value)
     }
 }

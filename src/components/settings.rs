@@ -120,7 +120,7 @@ impl SettingsComponents {
         Db: sqlx::Database,
         Manager: LfgPostManager<Db>,
     {
-        let post = Manager::get(pool, interaction.message.id).await.unwrap();
+        let post = Manager::get(pool, interaction.message.id).await?;
 
         if interaction.user.id != post.owner_id() {
             return Err(Error::PermissionDenied(post.owner_id()));
