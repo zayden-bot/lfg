@@ -59,7 +59,7 @@ impl LfgCreateModal {
             activity,
             start_time,
             description,
-            fireteam_size,
+            fireteam_size as i16,
         );
 
         let embed = DefaultTemplate::embed(&post, &interaction.user.name, None);

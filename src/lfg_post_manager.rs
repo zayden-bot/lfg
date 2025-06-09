@@ -59,18 +59,20 @@ impl LfgPostRow {
         activity: impl Into<String>,
         start_time: DateTime<chrono_tz::Tz>,
         description: impl Into<String>,
-        fireteam_size: impl Into<u8>,
+        fireteam_size: i16,
     ) -> Self {
-        let owner_id = owner_id.into().get() as i64;
+        let owner_id = owner_id.into();
+        let owner_id = owner_id.get() as i64;
+        let id = id.into();
 
         Self {
-            id: (id.into().get() as i64),
+            id: id.get() as i64,
             owner_id,
             activity: activity.into(),
             timestamp: start_time.naive_utc(),
             timezone: start_time.timezone().name().to_string(),
             description: description.into(),
-            fireteam_size: (fireteam_size.into() as i16),
+            fireteam_size,
             fireteam: vec![owner_id],
             alternatives: Vec::new(),
         }
