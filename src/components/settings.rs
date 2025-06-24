@@ -126,9 +126,14 @@ impl SettingsComponents {
             return Err(Error::PermissionDenied(post.owner_id()));
         }
 
+        interaction.channel_id.delete(ctx).await.unwrap();
+
         post.delete::<Db, Manager>(pool).await.unwrap();
 
-        interaction.channel_id.delete(ctx).await.unwrap();
+        interaction
+            .create_response(ctx, CreateInteractionResponse::Acknowledge)
+            .await
+            .unwrap();
 
         Ok(())
     }

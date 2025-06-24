@@ -81,8 +81,7 @@ impl PostComponents {
     {
         let LfgPostWithMessages { mut post, messages } =
             PostManager::get_with_messages::<MessageManager>(pool, interaction.channel_id.get())
-                .await
-                .unwrap();
+                .await?;
 
         post.leave(interaction.user.id);
 
