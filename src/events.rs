@@ -1,18 +1,25 @@
-use serenity::all::{MessageDeleteEvent, PartialGuildChannel};
-use sqlx::{Database, Pool};
+use async_trait::async_trait;
+use serenity::all::{MessageDeleteEvent, MessageId, PartialGuildChannel};
+use sqlx::{Database, Pool, any::AnyQueryResult};
 
-use crate::{LfgMessageManager, LfgPostManager};
+#[async_trait]
+pub trait EventManager<Db: Database> {
+    async fn delete(
+        pool: &Pool<Db>,
+        id: impl Into<MessageId> + Send,
+    ) -> sqlx::Result<AnyQueryResult>;
+}
 
-pub async fn thread_delete<Db: Database, Manager: LfgPostManager<Db>>(
+pub async fn thread_delete<Db: Database, Manager: EventManager<Db>>(
     thread: &PartialGuildChannel,
     pool: &Pool<Db>,
 ) {
-    let _ = Manager::delete(pool, thread.id.get()).await;
+    Manager::delete(pool, thread.id.get()).await.unwrap();
 }
 
-pub async fn message_delete<Db: Database, Manager: LfgMessageManager<Db>>(
+pub async fn message_delete<Db: Database, Manager: EventManager<Db>>(
     event: &MessageDeleteEvent,
     pool: &Pool<Db>,
 ) {
-    let _ = Manager::delete(pool, event.message_id).await;
+    Manager::delete(pool, event.message_id).await.unwrap();
 }

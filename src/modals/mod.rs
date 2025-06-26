@@ -1,8 +1,8 @@
 pub mod create;
-pub use create::LfgCreateModal;
+pub use create::Create;
 
 mod edit;
-pub use edit::LfgEditModal;
+pub use edit::Edit;
 
 use chrono::{DateTime, NaiveDateTime, TimeZone};
 use chrono_tz::Tz;
@@ -13,7 +13,7 @@ use crate::{Error, Result};
 pub fn modal_components(
     activity: &str,
     start_time: DateTime<Tz>,
-    fireteam_size: u8,
+    fireteam_size: i16,
     description: Option<&str>,
 ) -> Vec<CreateActionRow> {
     let mut desc_input =
@@ -43,7 +43,6 @@ pub fn modal_components(
         CreateActionRow::InputText(desc_input),
     ]
 }
-//CreateModal::new("lfg_edit", "Edit Event").components(row)
 
 fn start_time(timezone: Tz, start_time_str: &str) -> Result<DateTime<Tz>> {
     let naive_dt = NaiveDateTime::parse_from_str(start_time_str, "%Y-%m-%d %H:%M")

@@ -5,18 +5,20 @@ edition = "2024"
 
 [dependencies]
 zayden-core = { git = "https://github.com/zayden-bot/slash-command-core.git", branch = "master" }
+
+async-trait = { version = "*", default-features = false }
 chrono = { version = "*", default-features = false, features = [
     "alloc",
     "now",
 ] }
 chrono-tz = { version = "*", default-features = false }
+futures = { version = "*" }
+serenity = { version = "*", default-features = false, features = [
+    "rustls_backend",
+    "model",
+] }
 sqlx = { version = "*", default-features = false, features = [
     "any",
     "macros",
     "chrono",
-] }
-async-trait = { version = "*", default-features = false }
-serenity = { version = "*", default-features = false, features = [
-    "model",
-    "rustls_backend",
 ] }

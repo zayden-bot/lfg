@@ -8,7 +8,7 @@ use sqlx::{Database, Pool, any::AnyQueryResult};
 
 pub static LOCALE_TO_TIMEZONE: LazyLock<HashMap<&'static str, chrono_tz::Tz>> =
     LazyLock::new(|| {
-        [
+        HashMap::from([
             ("id", Asia::Jakarta),
             ("da", Europe::Copenhagen),
             ("de", Europe::Berlin),
@@ -40,14 +40,13 @@ pub static LOCALE_TO_TIMEZONE: LazyLock<HashMap<&'static str, chrono_tz::Tz>> =
             ("ja", Asia::Tokyo),
             ("zh-TW", Asia::Taipei),
             ("ko", Asia::Seoul),
-        ]
-        .into_iter()
-        .collect()
+        ])
     });
 
 #[async_trait]
 pub trait TimezoneManager<Db: Database> {
     async fn get(pool: &Pool<Db>, id: impl Into<UserId> + Send, local: &str) -> sqlx::Result<Tz>;
+
     async fn save(
         pool: &Pool<Db>,
         id: impl Into<UserId> + Send,

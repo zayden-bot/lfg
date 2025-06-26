@@ -54,11 +54,11 @@ pub const ACTIVITIES: [Activity; 40] = [
 pub struct Activity {
     pub name: &'static str,
     pub category: ActivityCategory,
-    pub fireteam_size: u8,
+    pub fireteam_size: i16,
 }
 
 impl Activity {
-    const fn new(name: &'static str, category: ActivityCategory, fireteam_size: u8) -> Self {
+    const fn new(name: &'static str, category: ActivityCategory, fireteam_size: i16) -> Self {
         Self {
             name,
             category,

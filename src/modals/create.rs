@@ -1,32 +1,49 @@
+use async_trait::async_trait;
 use serenity::all::{
-    AutoArchiveDuration, Context, CreateForumPost, CreateInteractionResponse, CreateMessage,
-    DiscordJsonError, ErrorResponse, HttpError, Mentionable, ModalInteraction,
+    AutoArchiveDuration, ChannelId, Context, CreateForumPost, CreateInteractionResponse,
+    CreateMessage, DiscordJsonError, ErrorResponse, GuildId, HttpError, Mentionable,
+    ModalInteraction,
 };
-use sqlx::Pool;
+use sqlx::any::AnyQueryResult;
+use sqlx::{Database, Pool};
 use zayden_core::parse_modal_data;
 
-use crate::lfg_message_manager::{LfgMessageManager, LfgMessageRow};
 use crate::templates::{DefaultTemplate, Template};
-use crate::{ACTIVITIES, Error, LfgPostManager, LfgPostRow, Result};
-use crate::{LfgGuildManager, TimezoneManager};
+use crate::{ACTIVITIES, Error, PostBuilder, Result};
+use crate::{PostRow, TimezoneManager};
 
 use super::start_time;
 
-pub struct LfgCreateModal;
+#[async_trait]
+pub trait CreateManager<Db: Database> {
+    async fn guild(pool: &Pool<Db>, id: impl Into<GuildId>) -> sqlx::Result<Option<GuildRow>>;
 
-impl LfgCreateModal {
-    pub async fn run<Db, GuildManager, PostManager, MessageManager, TzManager>(
+    async fn save(pool: &Pool<Db>, row: PostRow) -> sqlx::Result<AnyQueryResult>;
+}
+
+pub struct GuildRow {
+    channel_id: i64,
+    scheduled_thread_id: Option<i64>,
+}
+
+impl GuildRow {
+    pub fn channel_id(&self) -> ChannelId {
+        ChannelId::new(self.channel_id as u64)
+    }
+
+    pub fn scheduled_thread_id(&self) -> Option<ChannelId> {
+        self.scheduled_thread_id.map(|id| ChannelId::new(id as u64))
+    }
+}
+
+pub struct Create;
+
+impl Create {
+    pub async fn run<Db: Database, Manager: CreateManager<Db>, TzManager: TimezoneManager<Db>>(
         ctx: &Context,
         interaction: &ModalInteraction,
         pool: &Pool<Db>,
-    ) -> Result<()>
-    where
-        Db: sqlx::Database,
-        GuildManager: LfgGuildManager<Db>,
-        PostManager: LfgPostManager<Db>,
-        MessageManager: LfgMessageManager<Db>,
-        TzManager: TimezoneManager<Db>,
-    {
+    ) -> Result<()> {
         let guild_id = interaction.guild_id.ok_or(Error::MissingGuildId)?;
 
         let mut inputs = parse_modal_data(&interaction.data.components);
@@ -37,7 +54,7 @@ impl LfgCreateModal {
         let fireteam_size = inputs
             .remove("fireteam size")
             .expect("Fireteam size should exist as it's required")
-            .parse::<u8>()
+            .parse::<i16>()
             .unwrap();
         let description = match inputs.remove("description") {
             Some(description) => &description.chars().take(1024).collect::<String>(),
@@ -53,8 +70,7 @@ impl LfgCreateModal {
 
         let start_time = start_time(timezone, start_time_str)?;
 
-        let mut post = LfgPostRow::new(
-            1,
+        let mut post = PostBuilder::new(
             interaction.user.id,
             activity,
             start_time,
@@ -62,11 +78,10 @@ impl LfgCreateModal {
             fireteam_size as i16,
         );
 
-        let embed = DefaultTemplate::embed(&post, &interaction.user.name, None);
-
+        let embed = DefaultTemplate::thread_embed(&post, interaction.user.display_name());
         let row = DefaultTemplate::main_row();
 
-        let lfg_guild = GuildManager::get(pool, guild_id)
+        let lfg_guild = Manager::guild(pool, guild_id)
             .await
             .unwrap()
             .ok_or(Error::MissingSetup)?;
@@ -124,11 +139,10 @@ impl LfgCreateModal {
             .await
             .unwrap();
 
-        post.id = thread.id.get() as i64;
+        post = post.id(thread.id);
 
-        let embed = DefaultTemplate::embed(&post, &interaction.user.name, Some(thread.id));
-
-        post.save::<Db, PostManager>(pool).await.unwrap();
+        let embed =
+            DefaultTemplate::message_embed(&post, interaction.user.display_name(), thread.id);
 
         if let Some(thread_id) = lfg_guild.scheduled_thread_id() {
             let msg = thread_id
@@ -136,9 +150,10 @@ impl LfgCreateModal {
                 .await
                 .unwrap();
 
-            let row = LfgMessageRow::new(msg.id, msg.channel_id, thread.id);
-            MessageManager::save(pool, row).await.unwrap();
+            post = post.message(thread_id, msg.id)
         }
+
+        Manager::save(pool, post.build()).await.unwrap();
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Acknowledge)

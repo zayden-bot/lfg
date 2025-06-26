@@ -1,137 +1,36 @@
 use serenity::all::{
     ComponentInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
-    CreateModal, CreateSelectMenu, CreateSelectMenuKind,
 };
-use sqlx::Pool;
+use sqlx::{Database, Pool};
 
-use crate::modals::modal_components;
-use crate::{Error, LfgPostManager, Result};
+use crate::templates::{DefaultTemplate, Template};
+use crate::{Error, PostManager, Result};
 
-pub struct SettingsComponents;
+use super::Components;
 
-impl SettingsComponents {
-    pub async fn edit<Db, Manager>(
+impl Components {
+    pub async fn settings<Db: Database, Manager: PostManager<Db>>(
         ctx: &Context,
         interaction: &ComponentInteraction,
         pool: &Pool<Db>,
-    ) -> Result<()>
-    where
-        Db: sqlx::Database,
-        Manager: LfgPostManager<Db>,
-    {
-        let post = Manager::get(pool, interaction.message.id).await.unwrap();
+    ) -> Result<()> {
+        let owner = Manager::owner(pool, interaction.channel_id).await.unwrap();
 
-        if interaction.user.id != post.owner_id() {
-            return Err(Error::PermissionDenied(post.owner_id()));
+        if interaction.user.id != owner {
+            return Err(Error::PermissionDenied(owner));
         }
 
-        let row = modal_components(
-            &post.activity,
-            post.start_time(),
-            post.fireteam_size(),
-            Some(&post.description),
-        );
-
-        let modal = CreateModal::new("lfg_edit", "Edit Event").components(row);
-
-        interaction
-            .create_response(ctx, CreateInteractionResponse::Modal(modal))
-            .await
-            .unwrap();
-
-        Ok(())
-    }
-
-    pub async fn copy<Db, Manager>(
-        ctx: &Context,
-        interaction: &ComponentInteraction,
-        pool: &Pool<Db>,
-    ) -> Result<()>
-    where
-        Db: sqlx::Database,
-        Manager: LfgPostManager<Db>,
-    {
-        let post = Manager::get(pool, interaction.message.id).await.unwrap();
-
-        if interaction.user.id != post.owner_id() {
-            return Err(Error::PermissionDenied(post.owner_id()));
-        }
-
-        let row = modal_components(
-            &post.activity,
-            post.start_time(),
-            post.fireteam_size(),
-            Some(&post.description),
-        );
-
-        let modal = CreateModal::new("lfg_create", "Copy Event").components(row);
-
-        interaction
-            .create_response(ctx, CreateInteractionResponse::Modal(modal))
-            .await
-            .unwrap();
-
-        Ok(())
-    }
-    pub async fn kick<Db, Manager>(
-        ctx: &Context,
-        interaction: &ComponentInteraction,
-        pool: &Pool<Db>,
-    ) -> Result<()>
-    where
-        Db: sqlx::Database,
-        Manager: LfgPostManager<Db>,
-    {
-        let post = Manager::get(pool, interaction.message.id).await.unwrap();
-
-        if interaction.user.id != post.owner_id() {
-            return Err(Error::PermissionDenied(post.owner_id()));
-        }
-
-        let select_menu = CreateSelectMenu::new(
-            "lfg_kick_menu",
-            CreateSelectMenuKind::User {
-                default_users: None,
-            },
-        );
+        let main_row = DefaultTemplate::main_row();
+        let settings_row = DefaultTemplate::settings_row();
 
         interaction
             .create_response(
                 ctx,
-                CreateInteractionResponse::Message(
+                CreateInteractionResponse::UpdateMessage(
                     CreateInteractionResponseMessage::new()
-                        .content("Select the user you want to kick")
-                        .select_menu(select_menu)
-                        .ephemeral(true),
+                        .components(vec![main_row, settings_row]),
                 ),
             )
-            .await
-            .unwrap();
-
-        Ok(())
-    }
-
-    pub async fn delete<Db, Manager>(
-        ctx: &Context,
-        interaction: &ComponentInteraction,
-        pool: &Pool<Db>,
-    ) -> Result<()>
-    where
-        Db: sqlx::Database,
-        Manager: LfgPostManager<Db>,
-    {
-        let post = Manager::get(pool, interaction.message.id).await?;
-
-        if interaction.user.id != post.owner_id() {
-            return Err(Error::PermissionDenied(post.owner_id()));
-        }
-
-        interaction.channel_id.delete(ctx).await.unwrap();
-
-        post.delete::<Db, Manager>(pool).await.unwrap();
-
-        interaction
-            .create_response(ctx, CreateInteractionResponse::Acknowledge)
             .await
             .unwrap();
 
