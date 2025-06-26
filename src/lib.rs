@@ -11,7 +11,7 @@ pub mod utils;
 
 pub use activities::{ACTIVITIES, Activity, ActivityCategory};
 pub use commands::Command;
-pub use components::{KickComponent, TagsComponent};
+pub use components::{Components, KickComponent, TagsComponent};
 pub use error::Error;
 use error::Result;
 pub use modals::{Create, Edit};
