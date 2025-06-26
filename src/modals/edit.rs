@@ -28,7 +28,7 @@ impl Edit {
             .unwrap();
         let description = match inputs.remove("description") {
             Some(description) => description,
-            None => activity,
+            _ => activity,
         };
         let start_time_str = inputs
             .remove("start time")
