@@ -4,14 +4,13 @@ use serenity::all::{
     CreateMessage, DiscordJsonError, ErrorResponse, GuildId, HttpError, Mentionable,
     MessageReference, MessageReferenceKind, ModalInteraction,
 };
-use sqlx::any::AnyQueryResult;
 use sqlx::prelude::FromRow;
 use sqlx::{Database, Pool};
 use zayden_core::parse_modal_data;
 
 use crate::templates::{DefaultTemplate, Template};
 use crate::{ACTIVITIES, Error, PostBuilder, Result};
-use crate::{PostRow, TimezoneManager};
+use crate::{PostRow, Savable, TimezoneManager};
 
 use super::start_time;
 
@@ -21,8 +20,6 @@ pub trait CreateManager<Db: Database> {
         pool: &Pool<Db>,
         id: impl Into<GuildId> + Send,
     ) -> sqlx::Result<Option<GuildRow>>;
-
-    async fn save(pool: &Pool<Db>, row: PostRow) -> sqlx::Result<AnyQueryResult>;
 }
 
 #[derive(FromRow)]
@@ -44,7 +41,11 @@ impl GuildRow {
 pub struct Create;
 
 impl Create {
-    pub async fn run<Db: Database, Manager: CreateManager<Db>, TzManager: TimezoneManager<Db>>(
+    pub async fn run<
+        Db: Database,
+        Manager: CreateManager<Db> + Savable<Db, PostRow>,
+        TzManager: TimezoneManager<Db>,
+    >(
         ctx: &Context,
         interaction: &ModalInteraction,
         pool: &Pool<Db>,
