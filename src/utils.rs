@@ -1,6 +1,9 @@
 use std::fmt::Display;
 
-use serenity::all::{ChannelId, Context, CreateMessage, EditMessage, Mentionable, UserId};
+use serenity::all::{
+    ChannelId, Context, CreateMessage, DiscordJsonError, EditMessage, ErrorResponse, HttpError,
+    Mentionable, UserId,
+};
 
 use crate::templates::{Template, TemplateInfo};
 
@@ -22,10 +25,18 @@ pub async fn update_embeds<T: Template>(
     if let (Some(channel), Some(message)) = (row.alt_channel(), row.alt_message()) {
         let embed = T::message_embed(row, owner_name, thread);
 
-        channel
+        match channel
             .edit_message(ctx, message, EditMessage::new().embed(embed))
             .await
-            .unwrap();
+        {
+            Ok(_)
+            // Unknown Message
+            | Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
+                error: DiscordJsonError { code: 10008, .. },
+                ..
+            }))) => {}
+            Err(e) => panic!("{e:?}"),
+        };
     }
 }
 
