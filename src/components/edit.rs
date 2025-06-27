@@ -14,7 +14,7 @@ use super::Components;
 
 #[async_trait]
 pub trait EditManager<Db: Database> {
-    async fn edit_row(pool: &Pool<Db>, id: impl Into<MessageId>) -> sqlx::Result<EditRow>;
+    async fn edit_row(pool: &Pool<Db>, id: impl Into<MessageId> + Send) -> sqlx::Result<EditRow>;
 }
 
 #[derive(FromRow)]
