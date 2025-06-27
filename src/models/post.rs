@@ -142,8 +142,6 @@ pub trait PostManager<Db: Database> {
 
     async fn row(pool: &Pool<Db>, id: impl Into<ChannelId> + Send) -> sqlx::Result<PostRow>;
 
-    async fn save(pool: &Pool<Db>, row: PostRow) -> sqlx::Result<AnyQueryResult>;
-
     async fn delete(
         pool: &Pool<Db>,
         id: impl Into<ChannelId> + Send,

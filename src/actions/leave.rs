@@ -6,7 +6,8 @@ use sqlx::{Database, Pool};
 use zayden_core::parse_options;
 
 use crate::{
-    Leave, PostManager, Result,
+    Leave, PostManager, PostRow, Result,
+    models::Savable,
     templates::DefaultTemplate,
     utils::{Announcement, update_embeds},
 };
@@ -61,7 +62,7 @@ impl From<&ComponentInteraction> for LeaveInteraction {
     }
 }
 
-pub async fn leave<Db: Database, Manager: PostManager<Db>>(
+pub async fn leave<Db: Database, Manager: PostManager<Db> + Savable<Db, PostRow>>(
     ctx: &Context,
     interaction: impl Into<LeaveInteraction>,
     pool: &Pool<Db>,

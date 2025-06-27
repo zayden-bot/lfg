@@ -1,12 +1,12 @@
 use serenity::all::{ComponentInteraction, Context};
 use sqlx::{Database, Pool};
 
-use crate::{PostManager, Result, actions};
+use crate::{PostManager, PostRow, Result, Savable, actions};
 
 use super::Components;
 
 impl Components {
-    pub async fn leave<Db: Database, Manager: PostManager<Db>>(
+    pub async fn leave<Db: Database, Manager: PostManager<Db> + Savable<Db, PostRow>>(
         ctx: &Context,
         interaction: &ComponentInteraction,
         pool: &Pool<Db>,

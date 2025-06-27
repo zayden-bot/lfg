@@ -16,7 +16,7 @@ pub use setup::SetupManager;
 use sqlx::{Database, Pool};
 use zayden_core::parse_options;
 
-use crate::{ACTIVITIES, PostManager, Result, TimezoneManager};
+use crate::{ACTIVITIES, PostManager, PostRow, Result, Savable, TimezoneManager};
 
 pub struct Command;
 
@@ -24,7 +24,7 @@ impl Command {
     pub async fn lfg<
         Db: Database,
         TzManager: TimezoneManager<Db>,
-        PostHandler: PostManager<Db> + SetupManager<Db> + JoinedManager<Db>,
+        PostHandler: PostManager<Db> + SetupManager<Db> + JoinedManager<Db> + Savable<Db, PostRow>,
     >(
         ctx: &Context,
         interaction: &CommandInteraction,

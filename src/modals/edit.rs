@@ -4,14 +4,18 @@ use zayden_core::parse_modal_data;
 
 use crate::templates::DefaultTemplate;
 use crate::utils::update_embeds;
-use crate::{PostBuilder, PostManager, Result, TimezoneManager};
+use crate::{PostBuilder, PostManager, PostRow, Result, Savable, TimezoneManager};
 
 use super::start_time;
 
 pub struct Edit;
 
 impl Edit {
-    pub async fn run<Db: Database, Manager: PostManager<Db>, TzManager: TimezoneManager<Db>>(
+    pub async fn run<
+        Db: Database,
+        Manager: PostManager<Db> + Savable<Db, PostRow>,
+        TzManager: TimezoneManager<Db>,
+    >(
         ctx: &Context,
         interaction: &ModalInteraction,
         pool: &Pool<Db>,

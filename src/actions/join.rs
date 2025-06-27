@@ -5,9 +5,10 @@ use serenity::all::{
 use sqlx::{Database, Pool};
 use zayden_core::parse_options;
 
+use crate::models::Savable;
 use crate::templates::DefaultTemplate;
 use crate::utils::{Announcement, update_embeds};
-use crate::{Join, PostManager, Result};
+use crate::{Join, PostManager, PostRow, Result};
 
 pub struct JoinInteraction {
     token: String,
@@ -56,7 +57,7 @@ impl From<&CommandInteraction> for JoinInteraction {
     }
 }
 
-pub async fn join<Db: Database, Manager: PostManager<Db>>(
+pub async fn join<Db: Database, Manager: PostManager<Db> + Savable<Db, PostRow>>(
     ctx: &Context,
     interaction: impl Into<JoinInteraction>,
     pool: &Pool<Db>,

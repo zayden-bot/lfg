@@ -3,8 +3,8 @@ use serenity::all::{CreateInteractionResponse, CreateSelectMenu, CreateSelectMen
 use sqlx::Database;
 use sqlx::Pool;
 
-use crate::Error;
 use crate::models::post::PostManager;
+use crate::{Error, PostRow, Savable};
 use crate::{Result, actions};
 
 use super::Components;
@@ -48,7 +48,7 @@ impl Components {
 pub struct KickComponent;
 
 impl KickComponent {
-    pub async fn run<Db: Database, Manager: PostManager<Db>>(
+    pub async fn run<Db: Database, Manager: PostManager<Db> + Savable<Db, PostRow>>(
         ctx: &Context,
         interaction: &ComponentInteraction,
         pool: &Pool<Db>,

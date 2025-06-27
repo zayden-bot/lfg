@@ -1,11 +1,18 @@
 pub mod post;
 pub mod timezone_manager;
 
+use async_trait::async_trait;
 pub use post::{PostBuilder, PostManager, PostRow};
 use serenity::all::UserId;
+use sqlx::{Database, Pool};
 pub use timezone_manager::TimezoneManager;
 
 use crate::{Error, Result};
+
+#[async_trait]
+pub trait Savable<Db: Database, T> {
+    async fn save(pool: &Pool<Db>, item: T) -> sqlx::Result<Db::QueryResult>;
+}
 
 pub trait Leave {
     fn fireteam_mut(&mut self) -> &mut Vec<i64>;

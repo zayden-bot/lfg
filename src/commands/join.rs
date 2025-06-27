@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use serenity::all::{CommandInteraction, Context, ResolvedValue};
 use sqlx::{Database, Pool};
 
-use crate::{PostManager, Result, actions};
+use crate::{PostManager, PostRow, Result, Savable, actions};
 
 use super::Command;
 
 impl Command {
-    pub async fn join<Db: Database, Manager: PostManager<Db>>(
+    pub async fn join<Db: Database, Manager: PostManager<Db> + Savable<Db, PostRow>>(
         ctx: &Context,
         interaction: &CommandInteraction,
         pool: &Pool<Db>,
