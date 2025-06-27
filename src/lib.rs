@@ -2,6 +2,7 @@ pub mod actions;
 pub mod activities;
 pub mod commands;
 pub mod components;
+pub mod cron;
 pub mod error;
 pub mod events;
 pub mod modals;

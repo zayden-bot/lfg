@@ -12,6 +12,7 @@ chrono = { version = "*", default-features = false, features = [
     "now",
 ] }
 chrono-tz = { version = "*", default-features = false }
+futures = { version = "*" }
 serenity = { version = "*", default-features = false, features = [
     "rustls_backend",
     "model",

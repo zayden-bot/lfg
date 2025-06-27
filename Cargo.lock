@@ -457,6 +457,7 @@ checksum = "65bc07b1a8bc7c85c5f2e110c476c7389b4554ba72af57d8445ea63a576b0876"
 dependencies = [
  "futures-channel",
  "futures-core",
+ "futures-executor",
  "futures-io",
  "futures-sink",
  "futures-task",
@@ -915,6 +916,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "chrono-tz",
+ "futures",
  "serenity",
  "sqlx",
  "zayden-core",
@@ -2674,7 +2676,7 @@ dependencies = [
 [[package]]
 name = "zayden-core"
 version = "0.1.0"
-source = "git+https://github.com/zayden-bot/slash-command-core.git?branch=master#63ef77bed974c6595938e126ea4c519131d0a5fa"
+source = "git+https://github.com/zayden-bot/slash-command-core.git?branch=master#e8f171ee33e65f418ff90cb124072bd1d01beaa5"
 dependencies = [
  "async-trait",
  "cron",

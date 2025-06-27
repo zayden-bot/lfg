@@ -190,6 +190,12 @@ pub struct PostRow {
     pub alt_message: Option<i64>,
 }
 
+impl PostRow {
+    pub fn message(&self) -> MessageId {
+        MessageId::new(self.id as u64)
+    }
+}
+
 impl Leave for PostRow {
     fn fireteam_mut(&mut self) -> &mut Vec<i64> {
         &mut self.fireteam
