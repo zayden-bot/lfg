@@ -68,7 +68,7 @@ impl PostBuilder {
     pub fn build(self) -> PostRow {
         PostRow {
             id: self.id.get() as i64,
-            owner_id: self.owner.get() as i64,
+            owner: self.owner.get() as i64,
             activity: self.activity,
             start_time: self.start_time.with_timezone(&Utc),
             description: self.description,
@@ -117,7 +117,7 @@ impl From<PostRow> for PostBuilder {
     fn from(value: PostRow) -> Self {
         Self {
             id: ChannelId::new(value.id as u64),
-            owner: UserId::new(value.owner_id as u64),
+            owner: UserId::new(value.owner as u64),
             activity: value.activity,
             start_time: value.start_time.with_timezone(&Tz::UTC),
             description: value.description,
@@ -150,7 +150,7 @@ pub trait PostManager<Db: Database> {
 
 pub struct PostRow {
     pub id: i64,
-    pub owner_id: i64,
+    pub owner: i64,
     pub activity: String,
     pub start_time: DateTime<Utc>,
     pub description: String,
