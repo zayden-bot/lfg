@@ -12,7 +12,9 @@ impl Components {
         interaction: &ComponentInteraction,
         pool: &Pool<Db>,
     ) -> Result<()> {
-        let post = Manager::row(pool, interaction.message.id).await.unwrap();
+        let post = Manager::edit_row(pool, interaction.message.id)
+            .await
+            .unwrap();
 
         if interaction.user.id != post.owner() {
             return Err(Error::PermissionDenied(post.owner()));

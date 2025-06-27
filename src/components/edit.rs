@@ -14,7 +14,7 @@ use super::Components;
 
 #[async_trait]
 pub trait EditManager<Db: Database> {
-    async fn row(pool: &Pool<Db>, id: impl Into<MessageId>) -> sqlx::Result<EditRow>;
+    async fn edit_row(pool: &Pool<Db>, id: impl Into<MessageId>) -> sqlx::Result<EditRow>;
 }
 
 #[derive(FromRow)]
@@ -51,7 +51,9 @@ impl Components {
         interaction: &ComponentInteraction,
         pool: &Pool<Db>,
     ) -> Result<()> {
-        let post = Manager::row(pool, interaction.message.id).await.unwrap();
+        let post = Manager::edit_row(pool, interaction.message.id)
+            .await
+            .unwrap();
 
         if interaction.user.id != post.owner() {
             return Err(Error::PermissionDenied(post.owner()));
