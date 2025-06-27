@@ -14,7 +14,11 @@ impl Components {
         interaction: &ComponentInteraction,
         pool: &Pool<Db>,
     ) -> Result<()> {
-        let owner = Manager::owner(pool, interaction.channel_id).await.unwrap();
+        let owner = match Manager::owner(pool, interaction.channel_id).await {
+            Ok(owner) => owner,
+            Err(sqlx::Error::RowNotFound) => interaction.user.id,
+            Err(e) => panic!("{e:?}"),
+        };
 
         if interaction.user.id != owner {
             return Err(Error::PermissionDenied(owner));
