@@ -24,9 +24,7 @@ impl Command {
     pub async fn lfg<
         Db: Database,
         TzManager: TimezoneManager<Db>,
-        SetupHandler: SetupManager<Db>,
-        PostHandler: PostManager<Db>,
-        JoinedHandler: JoinedManager<Db>,
+        PostHandler: PostManager<Db> + SetupManager<Db> + JoinedManager<Db>,
     >(
         ctx: &Context,
         interaction: &CommandInteraction,
@@ -43,12 +41,12 @@ impl Command {
         let options = parse_options(options);
 
         match command.name {
-            "setup" => Self::setup::<Db, SetupHandler>(ctx, interaction, pool, options).await?,
+            "setup" => Self::setup::<Db, PostHandler>(ctx, interaction, pool, options).await?,
             "create" => Self::create::<Db, TzManager>(ctx, interaction, pool, options).await?,
             "tags" => Self::tags::<Db, PostHandler>(ctx, interaction, pool, options).await?,
             "join" => Self::join::<Db, PostHandler>(ctx, interaction, pool, options).await?,
             "leave" => Self::leave::<Db, PostHandler>(ctx, interaction, pool).await?,
-            "joined" => Self::joined::<Db, JoinedHandler>(ctx, interaction, pool).await,
+            "joined" => Self::joined::<Db, PostHandler>(ctx, interaction, pool).await,
             "timezone" => Self::timezone::<Db, TzManager>(ctx, interaction, pool, options).await?,
             _ => unreachable!("Invalid subcommand"),
         }

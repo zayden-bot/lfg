@@ -10,7 +10,7 @@ pub mod templates;
 pub mod utils;
 
 pub use activities::{ACTIVITIES, Activity, ActivityCategory};
-pub use commands::Command;
+pub use commands::{Command, JoinedManager, JoinedRow};
 pub use components::{Components, KickComponent, TagsComponent};
 pub use error::Error;
 use error::Result;
