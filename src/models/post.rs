@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::DateTime;
+use chrono::{DateTime, Utc};
 use chrono_tz::Tz;
 use serenity::all::{ChannelId, UserId};
 use sqlx::{Database, Pool, any::AnyQueryResult};
@@ -70,7 +70,7 @@ impl PostBuilder {
             id: self.id.get() as i64,
             owner_id: self.owner.get() as i64,
             activity: self.activity,
-            start_time: self.start_time,
+            start_time: self.start_time.with_timezone(&Utc),
             description: self.description,
             fireteam_size: self.fireteam_size,
             fireteam: self
@@ -119,7 +119,7 @@ impl From<PostRow> for PostBuilder {
             id: ChannelId::new(value.id as u64),
             owner: UserId::new(value.owner_id as u64),
             activity: value.activity,
-            start_time: value.start_time,
+            start_time: value.start_time.with_timezone(&Tz::UTC),
             description: value.description,
             fireteam_size: value.fireteam_size,
             fireteam: value
@@ -154,7 +154,7 @@ pub struct PostRow {
     pub id: i64,
     pub owner_id: i64,
     pub activity: String,
-    pub start_time: DateTime<Tz>,
+    pub start_time: DateTime<Utc>,
     pub description: String,
     pub fireteam_size: i16,
     pub fireteam: Vec<i64>,

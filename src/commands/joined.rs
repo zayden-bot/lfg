@@ -1,6 +1,5 @@
 use async_trait::async_trait;
-use chrono::DateTime;
-use chrono_tz::Tz;
+use chrono::{DateTime, Utc};
 use serenity::all::{
     ChannelId, CommandInteraction, Context, CreateEmbed, EditInteractionResponse, Mentionable,
     UserId,
@@ -21,7 +20,7 @@ pub trait JoinedManager<Db: Database> {
 pub struct JoinedRow {
     id: i64,
     activity: String,
-    start_time: DateTime<Tz>,
+    start_time: DateTime<Utc>,
     fireteam: Vec<i64>,
 }
 

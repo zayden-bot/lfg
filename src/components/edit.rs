@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::{DateTime, NaiveDateTime};
+use chrono::{DateTime, Utc};
 use chrono_tz::Tz;
 use serenity::all::{
     ComponentInteraction, Context, CreateInteractionResponse, CreateModal, MessageId, UserId,
@@ -21,9 +21,10 @@ pub trait EditManager<Db: Database> {
 pub struct EditRow {
     pub owner_id: i64,
     pub activity: String,
-    pub start_time: DateTime<Tz>,
+    pub start_time: DateTime<Utc>,
     pub description: String,
     pub fireteam_size: i16,
+    pub timezone: Option<String>,
 }
 
 impl EditRow {
@@ -32,7 +33,12 @@ impl EditRow {
     }
 
     pub fn start_time(&self) -> DateTime<Tz> {
-        self.start_time
+        let tz = match self.timezone.as_deref() {
+            Some(tz) => tz.parse().unwrap_or(Tz::UTC),
+            None => Tz::UTC,
+        };
+
+        self.start_time.with_timezone(&tz)
     }
 }
 
