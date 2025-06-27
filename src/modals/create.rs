@@ -1,3 +1,6 @@
+use std::thread::sleep;
+use std::time::Duration;
+
 use async_trait::async_trait;
 use serenity::all::{
     AutoArchiveDuration, ChannelId, Context, CreateForumPost, CreateInteractionResponse,
@@ -150,6 +153,8 @@ impl Create {
             .unwrap();
 
         if let Some(thread_id) = lfg_guild.scheduled_thread_id() {
+            sleep(Duration::from_secs(5));
+
             let reference = MessageReference::new(MessageReferenceKind::Forward, msg.channel_id)
                 .message_id(msg.id)
                 .guild_id(msg.guild_id.unwrap());
