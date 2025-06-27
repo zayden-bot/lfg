@@ -1,4 +1,4 @@
-use serenity::all::{CommandInteraction, Context};
+use serenity::all::{CommandInteraction, Context, EditInteractionResponse};
 use sqlx::{Database, Pool};
 
 use crate::{PostManager, PostRow, Result, Savable, actions};
@@ -13,7 +13,13 @@ impl Command {
     ) -> Result<()> {
         interaction.defer_ephemeral(ctx).await.unwrap();
 
-        actions::leave::<Db, Manager>(ctx, interaction, pool, interaction.user.display_name())
+        let content =
+            actions::leave::<Db, Manager>(ctx, interaction, pool, interaction.user.display_name())
+                .await
+                .unwrap();
+
+        interaction
+            .edit_response(ctx, EditInteractionResponse::new().content(content))
             .await
             .unwrap();
 

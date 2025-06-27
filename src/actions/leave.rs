@@ -1,6 +1,6 @@
 use serenity::all::{
-    Builder, CacheHttp, ChannelId, CommandInteraction, ComponentInteraction, Context,
-    EditInteractionResponse, Mentionable, Message, ResolvedValue, UserId,
+    ChannelId, CommandInteraction, ComponentInteraction, Context, Mentionable, ResolvedValue,
+    UserId,
 };
 use sqlx::{Database, Pool};
 use zayden_core::parse_options;
@@ -13,20 +13,9 @@ use crate::{
 };
 
 pub struct LeaveInteraction {
-    token: String,
     thread: ChannelId,
     author: UserId,
     user: UserId,
-}
-
-impl LeaveInteraction {
-    pub async fn edit_response(
-        &self,
-        cache_http: impl CacheHttp,
-        builder: EditInteractionResponse,
-    ) -> serenity::Result<Message> {
-        builder.execute(cache_http, &self.token).await
-    }
 }
 
 impl From<&CommandInteraction> for LeaveInteraction {
@@ -43,7 +32,6 @@ impl From<&CommandInteraction> for LeaveInteraction {
         };
 
         Self {
-            token: value.token.clone(),
             thread,
             author: value.user.id,
             user,
@@ -54,7 +42,6 @@ impl From<&CommandInteraction> for LeaveInteraction {
 impl From<&ComponentInteraction> for LeaveInteraction {
     fn from(value: &ComponentInteraction) -> Self {
         Self {
-            token: value.token.clone(),
             thread: value.channel_id,
             author: value.user.id,
             user: value.user.id,
@@ -67,7 +54,7 @@ pub async fn leave<Db: Database, Manager: PostManager<Db> + Savable<Db, PostRow>
     interaction: impl Into<LeaveInteraction>,
     pool: &Pool<Db>,
     owner_name: &str,
-) -> Result<()> {
+) -> Result<String> {
     let interaction = interaction.into();
 
     let mut row = Manager::row(pool, interaction.thread).await.unwrap();
@@ -90,10 +77,5 @@ pub async fn leave<Db: Database, Manager: PostManager<Db> + Savable<Db, PostRow>
         )
     };
 
-    interaction
-        .edit_response(ctx, EditInteractionResponse::new().content(content))
-        .await
-        .unwrap();
-
-    Ok(())
+    Ok(content)
 }
