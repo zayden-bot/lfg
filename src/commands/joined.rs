@@ -18,10 +18,10 @@ pub trait JoinedManager<Db: Database> {
 
 #[derive(FromRow)]
 pub struct JoinedRow {
-    id: i64,
-    activity: String,
-    start_time: DateTime<Utc>,
-    fireteam: Vec<i64>,
+    pub id: i64,
+    pub activity: String,
+    pub start_time: DateTime<Utc>,
+    pub fireteam: Vec<i64>,
 }
 
 impl JoinedRow {
