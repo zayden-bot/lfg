@@ -18,8 +18,7 @@ impl Components {
             false,
             interaction.user.display_name(),
         )
-        .await
-        .unwrap();
+        .await?;
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Acknowledge)
