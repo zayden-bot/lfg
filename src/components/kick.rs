@@ -1,6 +1,4 @@
-use serenity::all::{
-    ComponentInteraction, Context, CreateInteractionResponseMessage, EditInteractionResponse,
-};
+use serenity::all::{ComponentInteraction, Context, CreateInteractionResponseMessage};
 use serenity::all::{CreateInteractionResponse, CreateSelectMenu, CreateSelectMenuKind};
 use sqlx::Database;
 use sqlx::Pool;
@@ -57,13 +55,12 @@ impl KickComponent {
     ) -> Result<()> {
         interaction.defer_ephemeral(ctx).await.unwrap();
 
-        let content =
-            actions::leave::<Db, Manager>(ctx, interaction, pool, interaction.user.display_name())
-                .await
-                .unwrap();
+        actions::leave::<Db, Manager>(ctx, interaction, pool, interaction.user.display_name())
+            .await
+            .unwrap();
 
         interaction
-            .edit_response(ctx, EditInteractionResponse::new().content(content))
+            .create_response(ctx, CreateInteractionResponse::Acknowledge)
             .await
             .unwrap();
 
