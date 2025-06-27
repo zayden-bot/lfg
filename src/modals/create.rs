@@ -16,7 +16,10 @@ use super::start_time;
 
 #[async_trait]
 pub trait CreateManager<Db: Database> {
-    async fn guild(pool: &Pool<Db>, id: impl Into<GuildId>) -> sqlx::Result<Option<GuildRow>>;
+    async fn guild(
+        pool: &Pool<Db>,
+        id: impl Into<GuildId> + Send,
+    ) -> sqlx::Result<Option<GuildRow>>;
 
     async fn save(pool: &Pool<Db>, row: PostRow) -> sqlx::Result<AnyQueryResult>;
 }
