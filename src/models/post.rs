@@ -195,7 +195,7 @@ impl TemplateInfo for PostRow {
     }
 
     fn timestamp(&self) -> i64 {
-        self.start_time.naive_utc().and_utc().timestamp()
+        self.start_time.timestamp()
     }
 
     fn description(&self) -> &str {

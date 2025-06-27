@@ -21,8 +21,7 @@ pub trait EditManager<Db: Database> {
 pub struct EditRow {
     pub owner_id: i64,
     pub activity: String,
-    pub timestamp: NaiveDateTime,
-    pub timezone: String,
+    pub start_time: DateTime<Tz>,
     pub description: String,
     pub fireteam_size: i16,
 }
@@ -33,15 +32,7 @@ impl EditRow {
     }
 
     pub fn start_time(&self) -> DateTime<Tz> {
-        let timezone = self
-            .timezone
-            .parse::<Tz>()
-            .expect("Should be a valid timezone");
-
-        self.timestamp
-            .and_local_timezone(timezone)
-            .single()
-            .unwrap()
+        self.start_time
     }
 }
 
