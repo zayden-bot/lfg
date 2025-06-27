@@ -5,6 +5,7 @@ use serenity::all::{
     MessageReference, MessageReferenceKind, ModalInteraction,
 };
 use sqlx::any::AnyQueryResult;
+use sqlx::prelude::FromRow;
 use sqlx::{Database, Pool};
 use zayden_core::parse_modal_data;
 
@@ -24,9 +25,10 @@ pub trait CreateManager<Db: Database> {
     async fn save(pool: &Pool<Db>, row: PostRow) -> sqlx::Result<AnyQueryResult>;
 }
 
+#[derive(FromRow)]
 pub struct GuildRow {
-    channel_id: i64,
-    scheduled_thread_id: Option<i64>,
+    pub channel_id: i64,
+    pub scheduled_thread_id: Option<i64>,
 }
 
 impl GuildRow {
