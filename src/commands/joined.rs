@@ -1,5 +1,6 @@
 use async_trait::async_trait;
-use chrono::NaiveDateTime;
+use chrono::DateTime;
+use chrono_tz::Tz;
 use serenity::all::{
     ChannelId, CommandInteraction, Context, CreateEmbed, EditInteractionResponse, Mentionable,
     UserId,
@@ -20,7 +21,7 @@ pub trait JoinedManager<Db: Database> {
 pub struct JoinedRow {
     id: i64,
     activity: String,
-    timestamp: NaiveDateTime,
+    start_time: DateTime<Tz>,
     fireteam: Vec<i64>,
 }
 
@@ -34,7 +35,7 @@ impl JoinedRow {
     }
 
     pub fn timestamp(&self) -> i64 {
-        self.timestamp.and_utc().timestamp()
+        self.start_time.timestamp()
     }
 
     pub fn fireteam(&self) -> impl Iterator<Item = UserId> {

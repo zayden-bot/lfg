@@ -1,7 +1,7 @@
 use async_trait::async_trait;
-use chrono::{DateTime, NaiveDateTime};
+use chrono::DateTime;
 use chrono_tz::Tz;
-use serenity::all::{ChannelId, MessageId, UserId};
+use serenity::all::{ChannelId, UserId};
 use sqlx::{Database, Pool, any::AnyQueryResult};
 
 use crate::templates::TemplateInfo;
@@ -11,12 +11,11 @@ pub struct PostBuilder {
     id: ChannelId,
     owner: UserId,
     activity: String,
-    timestamp: DateTime<Tz>,
+    start_time: DateTime<Tz>,
     description: String,
     fireteam_size: i16,
     fireteam: Vec<UserId>,
     alternatives: Vec<UserId>,
-    messages: Vec<(ChannelId, MessageId)>,
 }
 
 impl PostBuilder {
@@ -33,12 +32,11 @@ impl PostBuilder {
             id: ChannelId::default(),
             owner,
             activity: activity.into(),
-            timestamp: start,
+            start_time: start,
             description: desc.into(),
             fireteam_size,
             fireteam: vec![owner],
             alternatives: Vec::new(),
-            messages: Vec::new(),
         }
     }
 
@@ -62,13 +60,8 @@ impl PostBuilder {
         self
     }
 
-    pub fn timestamp(mut self, start: DateTime<Tz>) -> Self {
-        self.timestamp = start;
-        self
-    }
-
-    pub fn message(mut self, channel: impl Into<ChannelId>, message: impl Into<MessageId>) -> Self {
-        self.messages.push((channel.into(), message.into()));
+    pub fn start(mut self, start: DateTime<Tz>) -> Self {
+        self.start_time = start;
         self
     }
 
@@ -77,8 +70,7 @@ impl PostBuilder {
             id: self.id.get() as i64,
             owner_id: self.owner.get() as i64,
             activity: self.activity,
-            timestamp: self.timestamp.naive_utc(),
-            timezone: self.timestamp.timezone().name().to_string(),
+            start_time: self.start_time,
             description: self.description,
             fireteam_size: self.fireteam_size,
             fireteam: self
@@ -91,11 +83,6 @@ impl PostBuilder {
                 .into_iter()
                 .map(|user| user.get() as i64)
                 .collect(),
-            messages: self
-                .messages
-                .into_iter()
-                .map(|(channel, message)| (channel.get() as i64, message.get() as i64))
-                .collect(),
         }
     }
 }
@@ -106,7 +93,7 @@ impl TemplateInfo for PostBuilder {
     }
 
     fn timestamp(&self) -> i64 {
-        self.timestamp.to_utc().timestamp()
+        self.start_time.timestamp()
     }
 
     fn description(&self) -> &str {
@@ -124,10 +111,6 @@ impl TemplateInfo for PostBuilder {
     fn alternatives(&self) -> impl Iterator<Item = UserId> {
         self.alternatives.iter().copied()
     }
-
-    fn messages(&self) -> impl Iterator<Item = (ChannelId, MessageId)> {
-        self.messages.iter().copied()
-    }
 }
 
 impl From<PostRow> for PostBuilder {
@@ -136,11 +119,7 @@ impl From<PostRow> for PostBuilder {
             id: ChannelId::new(value.id as u64),
             owner: UserId::new(value.owner_id as u64),
             activity: value.activity,
-            timestamp: value
-                .timestamp
-                .and_local_timezone(value.timezone.parse().unwrap())
-                .single()
-                .unwrap(),
+            start_time: value.start_time,
             description: value.description,
             fireteam_size: value.fireteam_size,
             fireteam: value
@@ -152,16 +131,6 @@ impl From<PostRow> for PostBuilder {
                 .alternatives
                 .into_iter()
                 .map(|id| UserId::new(id as u64))
-                .collect(),
-            messages: value
-                .messages
-                .into_iter()
-                .map(|(channel, message)| {
-                    (
-                        ChannelId::new(channel as u64),
-                        MessageId::new(message as u64),
-                    )
-                })
                 .collect(),
         }
     }
@@ -182,16 +151,14 @@ pub trait PostManager<Db: Database> {
 }
 
 pub struct PostRow {
-    id: i64,
-    owner_id: i64,
-    activity: String,
-    timestamp: NaiveDateTime,
-    timezone: String,
-    description: String,
-    fireteam_size: i16,
-    fireteam: Vec<i64>,
-    alternatives: Vec<i64>,
-    messages: Vec<(i64, i64)>,
+    pub id: i64,
+    pub owner_id: i64,
+    pub activity: String,
+    pub start_time: DateTime<Tz>,
+    pub description: String,
+    pub fireteam_size: i16,
+    pub fireteam: Vec<i64>,
+    pub alternatives: Vec<i64>,
 }
 
 impl Leave for PostRow {
@@ -228,7 +195,7 @@ impl TemplateInfo for PostRow {
     }
 
     fn timestamp(&self) -> i64 {
-        self.timestamp.and_utc().timestamp()
+        self.start_time.naive_utc().and_utc().timestamp()
     }
 
     fn description(&self) -> &str {
@@ -245,14 +212,5 @@ impl TemplateInfo for PostRow {
 
     fn alternatives(&self) -> impl Iterator<Item = UserId> {
         self.alternatives.iter().map(|&id| UserId::new(id as u64))
-    }
-
-    fn messages(&self) -> impl Iterator<Item = (ChannelId, MessageId)> {
-        self.messages.iter().map(|&(channel, message)| {
-            (
-                ChannelId::new(channel as u64),
-                MessageId::new(message as u64),
-            )
-        })
     }
 }

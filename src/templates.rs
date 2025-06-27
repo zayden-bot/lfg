@@ -1,6 +1,5 @@
 use serenity::all::{
-    ButtonStyle, ChannelId, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter,
-    Mentionable, MessageId, UserId,
+    ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, Mentionable, UserId,
 };
 
 pub trait TemplateInfo {
@@ -15,14 +14,10 @@ pub trait TemplateInfo {
     fn fireteam(&self) -> impl Iterator<Item = UserId>;
 
     fn alternatives(&self) -> impl Iterator<Item = UserId>;
-
-    fn messages(&self) -> impl Iterator<Item = (ChannelId, MessageId)>;
 }
 
 pub trait Template {
-    fn thread_embed(post: &impl TemplateInfo, owner_name: &str) -> CreateEmbed;
-
-    fn message_embed(post: &impl TemplateInfo, owner_name: &str, thread: ChannelId) -> CreateEmbed;
+    fn embed(post: &impl TemplateInfo, owner_name: &str) -> CreateEmbed;
 
     fn main_row() -> CreateActionRow;
 
@@ -47,7 +42,7 @@ pub trait Template {
 pub struct DefaultTemplate;
 
 impl Template for DefaultTemplate {
-    fn thread_embed(post: &impl TemplateInfo, owner_name: &str) -> CreateEmbed {
+    fn embed(post: &impl TemplateInfo, owner_name: &str) -> CreateEmbed {
         let timestamp = post.timestamp();
         let fireteam = post
             .fireteam()
@@ -64,44 +59,6 @@ impl Template for DefaultTemplate {
             .title(format!("{} - <t:{}>", post.activity(), timestamp))
             .field("Activity", post.activity(), true)
             .field("Start Time", format!("<t:{}:R>", timestamp), true);
-
-        if !post.description().is_empty() {
-            embed = embed.field("Description", post.description(), false)
-        }
-
-        embed = embed
-            .field(
-                format!("Joined: {}/{}", fireteam.len(), post.fireteam_size()),
-                fireteam_str,
-                false,
-            )
-            .footer(CreateEmbedFooter::new(format!("Posted by {}", owner_name)));
-
-        if !alternatives.is_empty() {
-            embed = embed.field("Alternatives", alternatives.join("\n"), true);
-        }
-
-        embed
-    }
-
-    fn message_embed(post: &impl TemplateInfo, owner_name: &str, thread: ChannelId) -> CreateEmbed {
-        let timestamp = post.timestamp();
-        let fireteam = post
-            .fireteam()
-            .map(|id| id.mention().to_string())
-            .collect::<Vec<_>>();
-        let alternatives = post
-            .alternatives()
-            .map(|id| id.mention().to_string())
-            .collect::<Vec<_>>();
-
-        let fireteam_str = fireteam.join("\n");
-
-        let mut embed = CreateEmbed::new()
-            .title(format!("{} - <t:{}>", post.activity(), timestamp))
-            .field("Activity", post.activity(), true)
-            .field("Start Time", format!("<t:{}:R>", timestamp), true)
-            .field("Event Thread", thread.mention().to_string(), true);
 
         if !post.description().is_empty() {
             embed = embed.field("Description", post.description(), false)

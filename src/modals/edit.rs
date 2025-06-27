@@ -44,7 +44,7 @@ impl Edit {
             .activity(activity)
             .fireteam_size(fireteam_size)
             .description(description)
-            .timestamp(start_time);
+            .start(start_time);
 
         interaction
             .channel_id

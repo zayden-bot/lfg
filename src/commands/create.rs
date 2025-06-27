@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use chrono::{TimeZone, Utc};
+use chrono::Utc;
 use serenity::all::{
     CommandInteraction, Context, CreateInteractionResponse, CreateModal, ResolvedValue,
 };
@@ -30,7 +30,7 @@ impl Command {
         let timezone = Manager::get(pool, interaction.user.id, &interaction.locale)
             .await
             .unwrap();
-        let now = timezone.from_utc_datetime(&Utc::now().naive_utc());
+        let now = Utc::now().with_timezone(&timezone);
 
         let fireteam_size = match ACTIVITIES.iter().find(|a| a.name == activity) {
             Some(activity) => activity.fireteam_size,

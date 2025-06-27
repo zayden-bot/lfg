@@ -1,6 +1,5 @@
 use std::fmt::Display;
 
-use futures::future;
 use serenity::all::{ChannelId, Context, CreateMessage, EditMessage, Mentionable, UserId};
 
 use crate::templates::{Template, TemplateInfo};
@@ -13,19 +12,12 @@ pub async fn update_embeds<T: Template>(
 ) {
     let thread = thread.into();
 
-    let thread_embed = T::thread_embed(row, owner_name);
-    let msg_embed = T::message_embed(row, owner_name, thread);
+    let thread_embed = T::embed(row, owner_name);
 
     thread
         .edit_message(ctx, thread.get(), EditMessage::new().embed(thread_embed))
         .await
         .unwrap();
-
-    let iter = row.messages().map(|(channel, message)| {
-        channel.edit_message(ctx, message, EditMessage::new().embed(msg_embed.clone()))
-    });
-
-    future::try_join_all(iter).await.unwrap();
 }
 
 pub enum Announcement {
