@@ -1,6 +1,6 @@
 use serenity::all::{
     ButtonStyle, ChannelId, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter,
-    Mentionable, UserId,
+    Mentionable, MessageId, UserId,
 };
 
 pub trait TemplateInfo {
@@ -15,6 +15,10 @@ pub trait TemplateInfo {
     fn fireteam(&self) -> impl Iterator<Item = UserId>;
 
     fn alternatives(&self) -> impl Iterator<Item = UserId>;
+
+    fn alt_channel(&self) -> Option<ChannelId>;
+
+    fn alt_message(&self) -> Option<MessageId>;
 }
 
 pub trait Template {

@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use chrono_tz::Tz;
-use serenity::all::{ChannelId, UserId};
+use serenity::all::{ChannelId, MessageId, UserId};
+use sqlx::prelude::FromRow;
 use sqlx::{Database, Pool, any::AnyQueryResult};
 
 use crate::templates::TemplateInfo;
@@ -16,6 +17,8 @@ pub struct PostBuilder {
     fireteam_size: i16,
     fireteam: Vec<UserId>,
     alternatives: Vec<UserId>,
+    alt_channel: Option<ChannelId>,
+    alt_message: Option<MessageId>,
 }
 
 impl PostBuilder {
@@ -37,6 +40,8 @@ impl PostBuilder {
             fireteam_size,
             fireteam: vec![owner],
             alternatives: Vec::new(),
+            alt_channel: None,
+            alt_message: None,
         }
     }
 
@@ -65,6 +70,16 @@ impl PostBuilder {
         self
     }
 
+    pub fn alt_channel(mut self, channel: ChannelId) -> Self {
+        self.alt_channel = Some(channel);
+        self
+    }
+
+    pub fn alt_message(mut self, message: MessageId) -> Self {
+        self.alt_message = Some(message);
+        self
+    }
+
     pub fn build(self) -> PostRow {
         PostRow {
             id: self.id.get() as i64,
@@ -83,6 +98,8 @@ impl PostBuilder {
                 .into_iter()
                 .map(|user| user.get() as i64)
                 .collect(),
+            alt_channel: self.alt_channel.map(|channel| channel.get() as i64),
+            alt_message: self.alt_message.map(|message| message.get() as i64),
         }
     }
 }
@@ -111,6 +128,14 @@ impl TemplateInfo for PostBuilder {
     fn alternatives(&self) -> impl Iterator<Item = UserId> {
         self.alternatives.iter().copied()
     }
+
+    fn alt_channel(&self) -> Option<ChannelId> {
+        self.alt_channel
+    }
+
+    fn alt_message(&self) -> Option<MessageId> {
+        self.alt_message
+    }
 }
 
 impl From<PostRow> for PostBuilder {
@@ -132,6 +157,8 @@ impl From<PostRow> for PostBuilder {
                 .into_iter()
                 .map(|id| UserId::new(id as u64))
                 .collect(),
+            alt_channel: value.alt_channel.map(|id| ChannelId::new(id as u64)),
+            alt_message: value.alt_message.map(|id| MessageId::new(id as u64)),
         }
     }
 }
@@ -148,6 +175,8 @@ pub trait PostManager<Db: Database> {
     ) -> sqlx::Result<AnyQueryResult>;
 }
 
+#[derive(FromRow)]
+
 pub struct PostRow {
     pub id: i64,
     pub owner: i64,
@@ -157,6 +186,8 @@ pub struct PostRow {
     pub fireteam_size: i16,
     pub fireteam: Vec<i64>,
     pub alternatives: Vec<i64>,
+    pub alt_channel: Option<i64>,
+    pub alt_message: Option<i64>,
 }
 
 impl Leave for PostRow {
@@ -210,5 +241,13 @@ impl TemplateInfo for PostRow {
 
     fn alternatives(&self) -> impl Iterator<Item = UserId> {
         self.alternatives.iter().map(|&id| UserId::new(id as u64))
+    }
+
+    fn alt_channel(&self) -> Option<ChannelId> {
+        self.alt_channel.map(|id| ChannelId::new(id as u64))
+    }
+
+    fn alt_message(&self) -> Option<MessageId> {
+        self.alt_message.map(|id| MessageId::new(id as u64))
     }
 }

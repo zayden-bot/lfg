@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use serenity::all::{
     AutoArchiveDuration, ChannelId, Context, CreateForumPost, CreateInteractionResponse,
-    CreateMessage, DiscordJsonError, ErrorResponse, GuildId, HttpError, Mentionable, MessageId,
-    MessageReference, MessageReferenceKind, ModalInteraction,
+    CreateMessage, DiscordJsonError, ErrorResponse, GuildId, HttpError, Mentionable,
+    ModalInteraction,
 };
 use sqlx::prelude::FromRow;
 use sqlx::{Database, Pool};
@@ -76,7 +76,7 @@ impl Create {
 
         let start_time = start_time(timezone, start_time_str)?;
 
-        let post = PostBuilder::new(
+        let mut post = PostBuilder::new(
             interaction.user.id,
             activity,
             start_time,
@@ -84,7 +84,7 @@ impl Create {
             fireteam_size as i16,
         );
 
-        let embed = DefaultTemplate::embed(&post, interaction.user.display_name());
+        let embed = DefaultTemplate::thread_embed(&post, interaction.user.display_name());
         let row = DefaultTemplate::main_row();
 
         let lfg_guild = Manager::guild(pool, guild_id)
@@ -145,20 +145,21 @@ impl Create {
             .await
             .unwrap();
 
+        if let Some(thread_id) = lfg_guild.scheduled_thread_id() {
+            let embed =
+                DefaultTemplate::message_embed(&post, interaction.user.display_name(), thread.id);
+
+            let msg = thread_id
+                .send_message(ctx, CreateMessage::new().embed(embed))
+                .await
+                .unwrap();
+
+            post = post.alt_channel(thread_id).alt_message(msg.id)
+        }
+
         Manager::save(pool, post.id(thread.id).build())
             .await
             .unwrap();
-
-        if let Some(thread_id) = lfg_guild.scheduled_thread_id() {
-            let reference = MessageReference::new(MessageReferenceKind::Forward, thread.id)
-                .message_id(MessageId::new(thread.id.get()))
-                .guild_id(thread.guild_id);
-
-            thread_id
-                .send_message(ctx, CreateMessage::new().reference_message(reference))
-                .await
-                .unwrap();
-        }
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Acknowledge)

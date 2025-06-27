@@ -12,12 +12,21 @@ pub async fn update_embeds<T: Template>(
 ) {
     let thread = thread.into();
 
-    let thread_embed = T::embed(row, owner_name);
+    let embed = T::thread_embed(row, owner_name);
 
     thread
-        .edit_message(ctx, thread.get(), EditMessage::new().embed(thread_embed))
+        .edit_message(ctx, thread.get(), EditMessage::new().embed(embed))
         .await
         .unwrap();
+
+    if let (Some(channel), Some(message)) = (row.alt_channel(), row.alt_message()) {
+        let embed = T::message_embed(row, owner_name, thread);
+
+        channel
+            .edit_message(ctx, message, EditMessage::new().embed(embed))
+            .await
+            .unwrap();
+    }
 }
 
 pub enum Announcement {
