@@ -11,8 +11,6 @@ impl Components {
         interaction: &ComponentInteraction,
         pool: &Pool<Db>,
     ) -> Result<()> {
-        interaction.defer_ephemeral(ctx).await.unwrap();
-
         actions::join::<Db, Manager>(
             ctx,
             interaction,
