@@ -8,18 +8,16 @@ use sqlx::prelude::FromRow;
 use sqlx::{Database, Pool};
 use zayden_core::parse_modal_data;
 
+use crate::cron::create_reminders;
 use crate::templates::{DefaultTemplate, Template};
-use crate::{ACTIVITIES, Error, PostBuilder, Result};
+use crate::{ACTIVITIES, Error, PostBuilder, PostManager, Result};
 use crate::{PostRow, Savable, TimezoneManager};
 
 use super::start_time;
 
 #[async_trait]
-pub trait CreateManager<Db: Database> {
-    async fn guild(
-        pool: &Pool<Db>,
-        id: impl Into<GuildId> + Send,
-    ) -> sqlx::Result<Option<GuildRow>>;
+pub trait GuildManager<Db: Database> {
+    async fn row(pool: &Pool<Db>, id: impl Into<GuildId> + Send) -> sqlx::Result<Option<GuildRow>>;
 }
 
 #[derive(FromRow)]
@@ -43,7 +41,8 @@ pub struct Create;
 impl Create {
     pub async fn run<
         Db: Database,
-        Manager: CreateManager<Db> + Savable<Db, PostRow>,
+        GuildHandler: GuildManager<Db>,
+        PostHandler: PostManager<Db> + Savable<Db, PostRow>,
         TzManager: TimezoneManager<Db>,
     >(
         ctx: &Context,
@@ -87,7 +86,7 @@ impl Create {
         let embed = DefaultTemplate::thread_embed(&post, interaction.user.display_name());
         let row = DefaultTemplate::main_row();
 
-        let lfg_guild = Manager::guild(pool, guild_id)
+        let lfg_guild = GuildHandler::row(pool, guild_id)
             .await
             .unwrap()
             .ok_or(Error::MissingSetup)?;
@@ -157,9 +156,11 @@ impl Create {
             post = post.alt_channel(thread_id).alt_message(msg.id)
         }
 
-        Manager::save(pool, post.id(thread.id).build())
-            .await
-            .unwrap();
+        let post = post.id(thread.id).build();
+
+        create_reminders::<Db, PostHandler>(ctx, &post).await;
+
+        PostHandler::save(pool, post).await.unwrap();
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Acknowledge)
