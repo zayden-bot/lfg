@@ -1,10 +1,7 @@
-use std::thread::sleep;
-use std::time::Duration;
-
 use async_trait::async_trait;
 use serenity::all::{
     AutoArchiveDuration, ChannelId, Context, CreateForumPost, CreateInteractionResponse,
-    CreateMessage, DiscordJsonError, ErrorResponse, GuildId, HttpError, Mentionable,
+    CreateMessage, DiscordJsonError, ErrorResponse, GuildId, HttpError, Mentionable, MessageId,
     MessageReference, MessageReferenceKind, ModalInteraction,
 };
 use sqlx::prelude::FromRow;
@@ -140,7 +137,7 @@ impl Create {
             r => r.unwrap(),
         };
 
-        let msg = thread
+        thread
             .send_message(
                 ctx,
                 CreateMessage::new().content(interaction.user.mention().to_string()),
@@ -153,11 +150,9 @@ impl Create {
             .unwrap();
 
         if let Some(thread_id) = lfg_guild.scheduled_thread_id() {
-            sleep(Duration::from_secs(5));
-
-            let reference = MessageReference::new(MessageReferenceKind::Forward, msg.channel_id)
-                .message_id(msg.id)
-                .guild_id(msg.guild_id.unwrap());
+            let reference = MessageReference::new(MessageReferenceKind::Forward, thread.id)
+                .message_id(MessageId::new(thread.id.get()))
+                .guild_id(thread.guild_id);
 
             thread_id
                 .send_message(ctx, CreateMessage::new().reference_message(reference))
