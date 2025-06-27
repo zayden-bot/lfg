@@ -1,6 +1,6 @@
 use serenity::all::{
-    Builder, CacheHttp, ChannelId, CommandInteraction, ComponentInteraction, Context,
-    EditInteractionResponse, Mentionable, Message, ResolvedValue, UserId,
+    ChannelId, CommandInteraction, ComponentInteraction, Context, Mentionable, ResolvedValue,
+    UserId,
 };
 use sqlx::{Database, Pool};
 use zayden_core::parse_options;
@@ -11,25 +11,13 @@ use crate::utils::{Announcement, update_embeds};
 use crate::{Join, PostManager, PostRow, Result};
 
 pub struct JoinInteraction {
-    token: String,
     thread: ChannelId,
     user: UserId,
-}
-
-impl JoinInteraction {
-    pub async fn edit_response(
-        &self,
-        cache_http: impl CacheHttp,
-        builder: EditInteractionResponse,
-    ) -> serenity::Result<Message> {
-        builder.execute(cache_http, &self.token).await
-    }
 }
 
 impl From<&ComponentInteraction> for JoinInteraction {
     fn from(value: &ComponentInteraction) -> Self {
         Self {
-            token: value.token.clone(),
             thread: value.channel_id,
             user: value.user.id,
         }
@@ -49,11 +37,7 @@ impl From<&CommandInteraction> for JoinInteraction {
             _ => value.user.id,
         };
 
-        Self {
-            token: value.token.clone(),
-            thread,
-            user,
-        }
+        Self { thread, user }
     }
 }
 
@@ -63,7 +47,7 @@ pub async fn join<Db: Database, Manager: PostManager<Db> + Savable<Db, PostRow>>
     pool: &Pool<Db>,
     alternative: bool,
     owner_name: &str,
-) -> Result<()> {
+) -> Result<String> {
     let interaction = interaction.into();
 
     let mut row = Manager::row(pool, interaction.thread).await.unwrap();
@@ -79,14 +63,5 @@ pub async fn join<Db: Database, Manager: PostManager<Db> + Savable<Db, PostRow>>
 
     Manager::save(pool, row).await.unwrap();
 
-    interaction
-        .edit_response(
-            ctx,
-            EditInteractionResponse::new()
-                .content(format!("You have joined {}", interaction.thread.mention())),
-        )
-        .await
-        .unwrap();
-
-    Ok(())
+    Ok(format!("You have joined {}", interaction.thread.mention()))
 }

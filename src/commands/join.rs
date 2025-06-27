@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use serenity::all::{CommandInteraction, Context, ResolvedValue};
+use serenity::all::{CommandInteraction, Context, EditInteractionResponse, ResolvedValue};
 use sqlx::{Database, Pool};
 
 use crate::{PostManager, PostRow, Result, Savable, actions};
@@ -26,7 +26,13 @@ impl Command {
             _ => false,
         };
 
-        actions::join::<Db, Manager>(ctx, interaction, pool, alternative, user.display_name())
+        let content =
+            actions::join::<Db, Manager>(ctx, interaction, pool, alternative, user.display_name())
+                .await
+                .unwrap();
+
+        interaction
+            .edit_response(ctx, EditInteractionResponse::new().content(content))
             .await
             .unwrap();
 

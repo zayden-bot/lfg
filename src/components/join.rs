@@ -1,4 +1,4 @@
-use serenity::all::{ComponentInteraction, Context};
+use serenity::all::{ComponentInteraction, Context, EditInteractionResponse};
 use sqlx::{Database, Pool};
 
 use crate::{PostManager, PostRow, Result, Savable, actions};
@@ -11,7 +11,9 @@ impl Components {
         interaction: &ComponentInteraction,
         pool: &Pool<Db>,
     ) -> Result<()> {
-        actions::join::<Db, Manager>(
+        interaction.defer_ephemeral(ctx).await.unwrap();
+
+        let content = actions::join::<Db, Manager>(
             ctx,
             interaction,
             pool,
@@ -20,6 +22,11 @@ impl Components {
         )
         .await
         .unwrap();
+
+        interaction
+            .edit_response(ctx, EditInteractionResponse::new().content(content))
+            .await
+            .unwrap();
 
         Ok(())
     }
