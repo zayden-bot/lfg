@@ -10,7 +10,7 @@ pub use joined::{JoinedManager, JoinedRow};
 use serenity::all::{
     AutocompleteChoice, AutocompleteOption, CommandInteraction, CommandOptionType, Context,
     CreateAutocompleteResponse, CreateCommand, CreateCommandOption, CreateInteractionResponse,
-    ResolvedValue,
+    ResolvedOption, ResolvedValue,
 };
 pub use setup::SetupManager;
 use sqlx::{Database, Pool};
@@ -30,9 +30,10 @@ impl Command {
     >(
         ctx: &Context,
         interaction: &CommandInteraction,
+        mut options: Vec<ResolvedOption<'_>>,
         pool: &Pool<Db>,
     ) -> Result<()> {
-        let command = interaction.data.options().pop().unwrap();
+        let command = options.pop().unwrap();
 
         let options = match command.value {
             ResolvedValue::SubCommand(options) => options,
