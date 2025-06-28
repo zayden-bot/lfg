@@ -16,6 +16,7 @@ futures = { version = "*" }
 serenity = { version = "*", default-features = false, features = [
     "rustls_backend",
     "model",
+    "chrono",
 ] }
 sqlx = { version = "*", default-features = false, features = [
     "any",

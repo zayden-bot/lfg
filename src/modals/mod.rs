@@ -1,7 +1,7 @@
 pub mod create;
-pub use create::Create;
+pub use create::{Create, GuildManager};
 
-mod edit;
+pub mod edit;
 pub use edit::Edit;
 
 use chrono::{DateTime, NaiveDateTime, TimeZone};
