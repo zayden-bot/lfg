@@ -53,7 +53,6 @@ pub async fn guild_create<
         let created_at = *thread.last_message_id.unwrap().created_at();
 
         if created_at < month_ago {
-            println!("Deleting: {}", thread.name());
             thread.delete(ctx).await.unwrap();
         }
 
