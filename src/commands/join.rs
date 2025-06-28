@@ -21,9 +21,7 @@ impl Command {
             _ => false,
         };
 
-        let content = actions::join::<Db, Manager>(ctx, interaction, pool, alternative)
-            .await
-            .unwrap();
+        let content = actions::join::<Db, Manager>(ctx, interaction, pool, alternative).await?;
 
         interaction
             .edit_response(ctx, EditInteractionResponse::new().content(content))
