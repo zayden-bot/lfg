@@ -51,8 +51,7 @@ pub async fn guild_create<
 
     for mut thread in threads {
         if *thread.last_message_id.unwrap().created_at() < month_ago {
-            println!("Deleting: {}", thread.name)
-            // thread.delete(ctx).await.unwrap();
+            thread.delete(ctx).await.unwrap();
         }
 
         if *thread.last_message_id.unwrap().created_at() < week_ago {
