@@ -26,10 +26,12 @@ impl From<&ComponentInteraction> for JoinInteraction {
 
 impl From<&CommandInteraction> for JoinInteraction {
     fn from(value: &CommandInteraction) -> Self {
-        let options = value.data.options();
-        let mut options = parse_options(options);
-        println!("{options:?}");
+        let ResolvedValue::SubCommand(subcommand) = value.data.options().pop().unwrap().value
+        else {
+            unreachable!("Option must be subcommand")
+        };
 
+        let mut options = parse_options(subcommand);
         let thread = match options.remove("thread") {
             Some(ResolvedValue::Channel(channel)) => channel.id,
             _ => value.channel_id,
