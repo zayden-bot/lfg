@@ -22,7 +22,7 @@ pub async fn guild_create<
     PostHandler: PostManager<Db>,
 >(
     ctx: &Context,
-    guild: Guild,
+    guild: &Guild,
     pool: &Pool<Db>,
 ) {
     let Ok(Some(guild_row)) = GuildHandler::row(pool, guild.id).await else {
