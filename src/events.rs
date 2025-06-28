@@ -86,7 +86,7 @@ pub async fn guild_create<
             }
         }
 
-        if post.start_time < now + Duration::hours(2) {
+        if post.start_time + Duration::hours(2) < now {
             post.channel()
                 .edit_thread(ctx, EditThread::new().archived(true))
                 .await
