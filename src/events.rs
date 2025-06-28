@@ -1,5 +1,7 @@
 use chrono::{Duration, Utc};
-use serenity::all::{Context, EditThread, Guild, PartialGuildChannel};
+use serenity::all::{
+    Context, DiscordJsonError, EditThread, ErrorResponse, Guild, HttpError, PartialGuildChannel,
+};
 use sqlx::{Database, Pool};
 
 use crate::{GuildManager, PostManager, actions, cron::create_reminders, templates::TemplateInfo};
@@ -53,10 +55,18 @@ pub async fn guild_create<
         }
 
         if *thread.last_message_id.unwrap().created_at() < week_ago {
-            thread
+            match thread
                 .edit_thread(ctx, EditThread::new().archived(true))
                 .await
-                .unwrap();
+            {
+                Ok(_)
+                // Unknown Channel
+                | Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
+                    error: DiscordJsonError { code: 10003, .. },
+                    ..
+                }))) => {}
+                Err(e) => panic!("{e:?}"),
+            }
         }
 
         let post = match PostHandler::row(pool, thread.id).await {
