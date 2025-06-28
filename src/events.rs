@@ -51,7 +51,8 @@ pub async fn guild_create<
 
     for mut thread in threads {
         if *thread.last_message_id.unwrap().created_at() < month_ago {
-            thread.delete(ctx).await.unwrap();
+            println!("Deleting: {}", thread.name)
+            // thread.delete(ctx).await.unwrap();
         }
 
         if *thread.last_message_id.unwrap().created_at() < week_ago {
@@ -74,14 +75,6 @@ pub async fn guild_create<
             Err(_) => continue,
         };
 
-        let thread = post.channel();
-
-        if !guild.channels.contains_key(&thread) {
-            actions::delete::<Db, PostHandler>(ctx, thread, pool)
-                .await
-                .unwrap();
-        }
-
         if post.start_time > now {
             create_reminders::<Db, PostHandler>(ctx, &post).await;
         }
@@ -96,5 +89,17 @@ pub async fn guild_create<
                 channel.delete_message(ctx, message).await.unwrap();
             }
         }
+
+        /*
+            for post in posts {
+                let thread = post.channel();
+
+                if !threads.contain(thread) {
+                    actions::delete::<Db, PostHandler>(ctx, thread, pool)
+                            .await
+                            .unwrap();
+                }
+            }
+        */
     }
 }
