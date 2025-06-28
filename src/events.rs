@@ -50,12 +50,14 @@ pub async fn guild_create<
     let month_ago = now - Duration::days(30);
 
     for mut thread in threads {
-        if *thread.last_message_id.unwrap().created_at() < month_ago {
+        let created_at = *thread.last_message_id.unwrap().created_at();
+
+        if created_at < month_ago {
             println!("Deleting: {}", thread.name());
             thread.delete(ctx).await.unwrap();
         }
 
-        if *thread.last_message_id.unwrap().created_at() < week_ago {
+        if created_at < week_ago {
             match thread
                 .edit_thread(ctx, EditThread::new().archived(true))
                 .await
@@ -80,14 +82,16 @@ pub async fn guild_create<
         }
 
         if post.start_time < now {
+            if let (Some(channel), Some(message)) = (post.alt_channel(), post.alt_message()) {
+                channel.delete_message(ctx, message).await.unwrap();
+            }
+        }
+
+        if post.start_time < now + Duration::hours(2) {
             post.channel()
                 .edit_thread(ctx, EditThread::new().archived(true))
                 .await
                 .unwrap();
-
-            if let (Some(channel), Some(message)) = (post.alt_channel(), post.alt_message()) {
-                channel.delete_message(ctx, message).await.unwrap();
-            }
         }
 
         /*
