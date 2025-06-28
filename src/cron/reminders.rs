@@ -1,6 +1,6 @@
 use chrono::{Datelike, Duration, Timelike};
 use futures::future;
-use serenity::all::{Colour, Context, CreateEmbed, CreateMessage, Mentionable};
+use serenity::all::{ChannelId, Colour, Context, CreateEmbed, CreateMessage, Mentionable};
 use sqlx::{Database, Pool};
 use zayden_core::{CronJob, cron::CronJobs};
 
@@ -10,7 +10,7 @@ pub async fn create_reminders<Db: Database, Manager: PostManager<Db>>(
     ctx: &Context,
     row: &PostRow,
 ) {
-    let post_id = row.id;
+    let post_id = row.channel();
 
     let week = row.start_time - Duration::days(7);
     let day = row.start_time - Duration::hours(24);
@@ -58,8 +58,12 @@ pub async fn create_reminders<Db: Database, Manager: PostManager<Db>>(
     jobs.extend([week_job, day_job, mins_30_job]);
 }
 
-async fn reminder<Db: Database, Manager: PostManager<Db>>(ctx: Context, pool: Pool<Db>, id: i64) {
-    let post = Manager::row(&pool, id as u64).await.unwrap();
+async fn reminder<Db: Database, Manager: PostManager<Db>>(
+    ctx: Context,
+    pool: Pool<Db>,
+    id: ChannelId,
+) {
+    let post = Manager::row(&pool, id).await.unwrap();
 
     let timestamp = post.start_time.timestamp();
 
@@ -68,7 +72,7 @@ async fn reminder<Db: Database, Manager: PostManager<Db>>(ctx: Context, pool: Po
         .colour(Colour::BLUE)
         .description(format!(
             "Starting <t:{timestamp}:R>\nThread: {}",
-            post.message()
+            post.channel().mention()
         ))
         .field(
             "Joined",
