@@ -165,6 +165,8 @@ impl From<PostRow> for PostBuilder {
 
 #[async_trait]
 pub trait PostManager<Db: Database> {
+    async fn exists(pool: &Pool<Db>, id: impl Into<ChannelId> + Send) -> sqlx::Result<bool>;
+
     async fn owner(pool: &Pool<Db>, id: impl Into<ChannelId> + Send) -> sqlx::Result<UserId>;
 
     async fn row(pool: &Pool<Db>, id: impl Into<ChannelId> + Send) -> sqlx::Result<PostRow>;
@@ -191,6 +193,10 @@ pub struct PostRow {
 }
 
 impl PostRow {
+    pub fn channel(&self) -> ChannelId {
+        ChannelId::new(self.id as u64)
+    }
+
     pub fn message(&self) -> MessageId {
         MessageId::new(self.id as u64)
     }

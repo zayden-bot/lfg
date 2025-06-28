@@ -1,18 +1,16 @@
-use serenity::all::{MessageDeleteEvent, PartialGuildChannel};
+use serenity::all::{Context, PartialGuildChannel};
 use sqlx::{Database, Pool};
 
-use crate::PostManager;
+use crate::{PostManager, actions};
 
 pub async fn thread_delete<Db: Database, Manager: PostManager<Db>>(
+    ctx: &Context,
     thread: &PartialGuildChannel,
     pool: &Pool<Db>,
 ) {
-    Manager::delete(pool, thread.id).await.unwrap();
-}
-
-pub async fn message_delete<Db: Database, Manager: PostManager<Db>>(
-    event: &MessageDeleteEvent,
-    pool: &Pool<Db>,
-) {
-    Manager::delete(pool, event.message_id.get()).await.unwrap();
+    if Manager::exists(pool, thread.id).await.unwrap() {
+        actions::delete::<Db, Manager>(ctx, thread.id, pool)
+            .await
+            .unwrap();
+    }
 }
