@@ -34,7 +34,7 @@ pub async fn guild_create<
     let lfg_channel = guild_row.channel_id();
 
     let archived_threads = lfg_channel
-        .get_archived_public_threads(&ctx, None, None)
+        .get_archived_public_threads(&ctx, None, Some(100))
         .await
         .unwrap();
 
@@ -51,6 +51,7 @@ pub async fn guild_create<
 
     for mut thread in threads {
         if *thread.last_message_id.unwrap().created_at() < month_ago {
+            println!("Deleting: {}", thread.name());
             thread.delete(ctx).await.unwrap();
         }
 
