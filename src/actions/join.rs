@@ -46,14 +46,15 @@ pub async fn join<Db: Database, Manager: PostManager<Db> + Savable<Db, PostRow>>
     interaction: impl Into<JoinInteraction>,
     pool: &Pool<Db>,
     alternative: bool,
-    owner_name: &str,
 ) -> Result<String> {
     let interaction = interaction.into();
 
     let mut row = Manager::row(pool, interaction.thread).await.unwrap();
     row.join(interaction.user, alternative)?;
 
-    update_embeds::<DefaultTemplate>(ctx, &row, owner_name, interaction.thread).await;
+    let owner = row.owner().to_user(ctx).await.unwrap();
+
+    update_embeds::<DefaultTemplate>(ctx, &row, owner.display_name(), interaction.thread).await;
     Announcement::Joined {
         user: interaction.user,
         alternative,

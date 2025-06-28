@@ -16,20 +16,14 @@ impl Command {
     ) -> Result<()> {
         interaction.defer_ephemeral(ctx).await.unwrap();
 
-        let user = match options.remove("guardian") {
-            Some(ResolvedValue::User(user, _)) => user,
-            _ => &interaction.user,
-        };
-
         let alternative = match options.remove("alternative") {
             Some(ResolvedValue::Boolean(alt)) => alt,
             _ => false,
         };
 
-        let content =
-            actions::join::<Db, Manager>(ctx, interaction, pool, alternative, user.display_name())
-                .await
-                .unwrap();
+        let content = actions::join::<Db, Manager>(ctx, interaction, pool, alternative)
+            .await
+            .unwrap();
 
         interaction
             .edit_response(ctx, EditInteractionResponse::new().content(content))

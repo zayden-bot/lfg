@@ -11,15 +11,9 @@ impl Components {
         interaction: &ComponentInteraction,
         pool: &Pool<Db>,
     ) -> Result<()> {
-        actions::join::<Db, Manager>(
-            ctx,
-            interaction,
-            pool,
-            true,
-            interaction.user.display_name(),
-        )
-        .await
-        .unwrap();
+        actions::join::<Db, Manager>(ctx, interaction, pool, true)
+            .await
+            .unwrap();
 
         interaction
             .create_response(ctx, CreateInteractionResponse::Acknowledge)

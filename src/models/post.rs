@@ -200,6 +200,10 @@ impl PostRow {
     pub fn message(&self) -> MessageId {
         MessageId::new(self.id as u64)
     }
+
+    pub fn owner(&self) -> UserId {
+        UserId::new(self.owner as u64)
+    }
 }
 
 impl Leave for PostRow {
