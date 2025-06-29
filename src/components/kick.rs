@@ -53,9 +53,7 @@ impl KickComponent {
         interaction: &ComponentInteraction,
         pool: &Pool<Db>,
     ) -> Result<()> {
-        interaction.defer_ephemeral(ctx).await.unwrap();
-
-        actions::leave::<Db, Manager>(ctx, interaction, pool, interaction.user.display_name())
+        actions::leave::<Db, Manager>(ctx, interaction, pool)
             .await
             .unwrap();
 

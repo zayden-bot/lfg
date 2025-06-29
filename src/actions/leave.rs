@@ -1,6 +1,6 @@
 use serenity::all::{
-    ChannelId, CommandInteraction, ComponentInteraction, Context, Mentionable, ResolvedValue,
-    UserId,
+    ChannelId, CommandInteraction, ComponentInteraction, ComponentInteractionDataKind, Context,
+    Mentionable, ResolvedValue, UserId,
 };
 use sqlx::{Database, Pool};
 use zayden_core::parse_options;
@@ -20,8 +20,12 @@ pub struct LeaveInteraction {
 
 impl From<&CommandInteraction> for LeaveInteraction {
     fn from(value: &CommandInteraction) -> Self {
-        let options = value.data.options();
-        let mut options = parse_options(options);
+        let ResolvedValue::SubCommand(subcommand) = value.data.options().pop().unwrap().value
+        else {
+            unreachable!("Option must be subcommand")
+        };
+
+        let mut options = parse_options(subcommand);
         let thread = match options.remove("thread") {
             Some(ResolvedValue::Channel(channel)) => channel.id,
             _ => value.channel_id,
@@ -41,10 +45,15 @@ impl From<&CommandInteraction> for LeaveInteraction {
 
 impl From<&ComponentInteraction> for LeaveInteraction {
     fn from(value: &ComponentInteraction) -> Self {
+        let user = match &value.data.kind {
+            ComponentInteractionDataKind::UserSelect { values } => *values.first().unwrap(),
+            _ => value.user.id,
+        };
+
         Self {
             thread: value.channel_id,
             author: value.user.id,
-            user: value.user.id,
+            user,
         }
     }
 }
@@ -53,14 +62,15 @@ pub async fn leave<Db: Database, Manager: PostManager<Db> + Savable<Db, PostRow>
     ctx: &Context,
     interaction: impl Into<LeaveInteraction>,
     pool: &Pool<Db>,
-    owner_name: &str,
 ) -> Result<String> {
     let interaction = interaction.into();
 
     let mut row = Manager::row(pool, interaction.thread).await.unwrap();
     row.leave(interaction.user);
 
-    update_embeds::<DefaultTemplate>(ctx, &row, owner_name, interaction.thread).await;
+    let owner = row.owner().to_user(ctx).await.unwrap();
+
+    update_embeds::<DefaultTemplate>(ctx, &row, owner.display_name(), interaction.thread).await;
     Announcement::Left(interaction.user)
         .send(ctx, interaction.thread)
         .await;

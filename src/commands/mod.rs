@@ -118,10 +118,11 @@ impl Command {
             "join",
             "Join a looking for group post",
         )
-        .add_sub_option(
-            CreateCommandOption::new(CommandOptionType::Channel, "thread", "The LFG thread")
-                .required(true),
-        )
+        .add_sub_option(CreateCommandOption::new(
+            CommandOptionType::Channel,
+            "thread",
+            "The LFG thread",
+        ))
         .add_sub_option(CreateCommandOption::new(
             CommandOptionType::User,
             "guardian",
@@ -138,10 +139,11 @@ impl Command {
             "leave",
             "Leave a looking for group post",
         )
-        .add_sub_option(
-            CreateCommandOption::new(CommandOptionType::Channel, "thread", "The LFG thread")
-                .required(true),
-        );
+        .add_sub_option(CreateCommandOption::new(
+            CommandOptionType::Channel,
+            "thread",
+            "The LFG thread",
+        ));
 
         let joined = CreateCommandOption::new(
             CommandOptionType::SubCommand,

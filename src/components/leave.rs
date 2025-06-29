@@ -11,7 +11,7 @@ impl Components {
         interaction: &ComponentInteraction,
         pool: &Pool<Db>,
     ) -> Result<()> {
-        actions::leave::<Db, Manager>(ctx, interaction, pool, interaction.user.display_name())
+        actions::leave::<Db, Manager>(ctx, interaction, pool)
             .await
             .unwrap();
 

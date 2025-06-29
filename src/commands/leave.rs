@@ -13,10 +13,9 @@ impl Command {
     ) -> Result<()> {
         interaction.defer_ephemeral(ctx).await.unwrap();
 
-        let content =
-            actions::leave::<Db, Manager>(ctx, interaction, pool, interaction.user.display_name())
-                .await
-                .unwrap();
+        let content = actions::leave::<Db, Manager>(ctx, interaction, pool)
+            .await
+            .unwrap();
 
         interaction
             .edit_response(ctx, EditInteractionResponse::new().content(content))
