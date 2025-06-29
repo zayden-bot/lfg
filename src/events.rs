@@ -82,7 +82,15 @@ pub async fn guild_create<
 
         if post.start_time < now {
             if let (Some(channel), Some(message)) = (post.alt_channel(), post.alt_message()) {
-                channel.delete_message(ctx, message).await.unwrap();
+                match channel.delete_message(ctx, message).await {
+                    Ok(_)
+                    // Unknown Message
+                    | Err(serenity::Error::Http(HttpError::UnsuccessfulRequest(ErrorResponse {
+                        error: DiscordJsonError { code: 10008, .. },
+                        ..
+                    }))) => {}
+                    Err(e) => panic!("{e:?}"),
+                };
             }
         }
 
