@@ -63,7 +63,14 @@ async fn reminder<Db: Database, Manager: PostManager<Db>>(
     pool: Pool<Db>,
     id: ChannelId,
 ) {
-    let post = Manager::row(&pool, id).await.unwrap();
+    let post = match Manager::row(&pool, id).await {
+        Ok(post) => post,
+        Err(sqlx::Error::RowNotFound) => {
+            println!("Post for '{}' not found", id);
+            return;
+        }
+        Err(e) => panic!("{e:?}"),
+    };
 
     let timestamp = post.start_time.timestamp();
 
